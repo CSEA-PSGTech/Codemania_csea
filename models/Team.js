@@ -10,10 +10,43 @@ const TeamSchema = new mongoose.Schema(
     yearOfStudy: { type: Number, required: true },
 
     solvedCount: { type: Number, default: 0 },
+
+        // 🔹 Round 1 – Optimization Arena
+    round1: {
+      questionsSolved: {
+        q1: { type: Boolean, default: false },
+        q2: { type: Boolean, default: false },
+        q3: { type: Boolean, default: false },
+        q4: { type: Boolean, default: false },
+        q5: { type: Boolean, default: false }
+      },
+      solvedCount: { type: Number, default: 0 },
+      startTime: { type: Date },
+      endTime: { type: Date },
+      totalTime: { type: Number },
+      status: {
+        type: String,
+        enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"],
+        default: "NOT_STARTED"
+      },
+      round1Points: { type: Number, default: 0 }
+    },
+
     totalSubmissions: { type: Number, default: 0 },
     totalPoints: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
+
+// Check if Round 1 is completed
+TeamSchema.methods.isRound1Completed = function () {
+  return this.round1 && this.round1.solvedCount === 5;
+};
+
+// Get finish time safely
+TeamSchema.methods.getRound1FinishTime = function () {
+  if (!this.round1 || !this.round1.endTime) return null;
+  return this.round1.endTime;
+};
 
 module.exports = mongoose.model("Team", TeamSchema);

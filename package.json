@@ -1,0 +1,23 @@
+{
+  "name": "codemania_csea",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dummyRound1.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SUKESH0321/Codemania_csea.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SUKESH0321/Codemania_csea/issues"
+  },
+  "homepage": "https://github.com/SUKESH0321/Codemania_csea#readme",
+  "dependencies": {
+    "mongoose": "^9.1.2"
+  }
+}
