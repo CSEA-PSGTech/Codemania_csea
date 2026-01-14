@@ -11,7 +11,6 @@ const TeamSchema = new mongoose.Schema(
 
     solvedCount: { type: Number, default: 0 },
 
-        // 🔹 Round 1 – Optimization Arena
     round1: {
       questionsSolved: {
         q1: { type: Boolean, default: false },
@@ -38,12 +37,10 @@ const TeamSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Check if Round 1 is completed
 TeamSchema.methods.isRound1Completed = function () {
   return this.round1 && this.round1.solvedCount === 5;
 };
 
-// Get finish time safely
 TeamSchema.methods.getRound1FinishTime = function () {
   if (!this.round1 || !this.round1.endTime) return null;
   return this.round1.endTime;
