@@ -4,7 +4,15 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../../.env") });
+const dotenv = require("dotenv");
+
+// Load .env from backend/core first, then fall back to workspace root.
+const localEnvPath = path.join(__dirname, ".env");
+const rootEnvPath = path.join(__dirname, "../../.env");
+
+if (dotenv.config({ path: localEnvPath }).error) {
+  dotenv.config({ path: rootEnvPath });
+}
 
 const app = express();
 

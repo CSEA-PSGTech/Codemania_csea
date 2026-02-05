@@ -452,7 +452,7 @@ export default function IdeInterface() {
                     <div className="h-6 w-px bg-cyan-900/50 hidden md:block"></div>
 
                     <div className="hidden md:flex items-center gap-3 text-sm text-cyan-100/80">
-                        <span className="font-bold text-cyan-500">#{problem.id}</span>
+                        {/* x`x` */}
                         <span>{problem.title}</span>
                         <Badge type={problem.difficulty} text={problem.difficulty} />
                     </div>
@@ -540,7 +540,7 @@ export default function IdeInterface() {
                             <>
                                 <div>
                                     <div className="flex items-center justify-between mb-4">
-                                        <h1 className="text-2xl font-bold text-white">{problem.id}. {problem.title}</h1>
+                                        <h1 className="text-2xl font-bold text-white">  {problem.title}</h1>
                                         <div className="flex gap-2">
                                             <Badge type={problem.difficulty} text={problem.difficulty} />
                                             <Badge type="tag" text={problem.category} />

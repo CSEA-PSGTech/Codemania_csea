@@ -370,50 +370,6 @@ export default function HomePage() {
                 <ScrollIndicator targetId="features" />
             </section>
 
-            {/* ===== SECTION 2: FEATURES ===== */}
-            <section id="features" className="relative z-20 min-h-screen py-24 px-6 md:px-20 lg:px-32 bg-gradient-to-b from-transparent via-black/50 to-black">
-                <div className="max-w-6xl mx-auto">
-
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-black text-white mb-4" style={{ animation: 'fadeInUp 0.8s ease-out backwards' }}>
-                            ARENA <span className="text-cyan-400">PROTOCOLS</span>
-                        </h2>
-                        <p className="text-cyan-200/50 max-w-2xl mx-auto">
-                            Master the rules of engagement. Understand the battlefield before you deploy.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <FeatureCard
-                            delay={0.2}
-                            icon={<Zap size={32} />}
-                            title="SPEED RUN"
-                            desc="Optimize your complexity. Sub-second execution times required for max points."
-                        />
-                        <FeatureCard
-                            delay={0.4}
-                            icon={<Shield size={32} />}
-                            title="SECURE ENV"
-                            desc="Sandboxed execution. Memory limits enforced. No external libraries allowed."
-                        />
-                        <FeatureCard
-                            delay={0.6}
-                            icon={<Cpu size={32} />}
-                            title="AI ADVERSARY"
-                            desc="Compete against the machine. Can your logic beat the default neural weights?"
-                        />
-                    </div>
-
-                    {/* Stats Section */}
-                    <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard delay={0.8} icon={<Users size={28} />} value="500+" label="Competitors" />
-                        <StatCard delay={1.0} icon={<Code size={28} />} value="50" label="Challenges" />
-                        <StatCard delay={1.2} icon={<Trophy size={28} />} value="₹50K" label="Prize Pool" />
-                        <StatCard delay={1.4} icon={<Clock size={28} />} value="24H" label="Duration" />
-                    </div>
-                </div>
-            </section>
-
             {/* ===== SECTION 3: COMPETITION PHASES ===== */}
             <section className="relative z-20 min-h-screen py-24 px-6 md:px-20 lg:px-32">
                 <div className="max-w-6xl mx-auto">
@@ -429,26 +385,15 @@ export default function HomePage() {
                             <div className="space-y-0">
                                 <TimelineItem
                                     phase="PHASE_01"
-                                    title="Registration & Team Formation"
-                                    desc="Form your squad. Max 3 members per team. Solo operators welcome."
+                                    title="Code Optimization Round"
+                                    desc="Form your duos.Duos compete to optimize given code for performance and efficiency. The top 8 teams advance to the final phase."
                                     isActive={true}
                                 />
+
                                 <TimelineItem
                                     phase="PHASE_02"
-                                    title="Qualification Round"
-                                    desc="Prove your worth. Top 100 teams advance to the arena."
-                                    isActive={false}
-                                />
-                                <TimelineItem
-                                    phase="PHASE_03"
-                                    title="Semi-Finals"
-                                    desc="Algorithmic warfare. Complex problems. Time-critical solutions."
-                                    isActive={false}
-                                />
-                                <TimelineItem
-                                    phase="PHASE_04"
-                                    title="Grand Finals"
-                                    desc="Last teams standing battle for glory and the ultimate prize."
+                                    title="Final Problem Solving Round"
+                                    desc="The qualified teams battle it out by solving challenging algorithmic questions to claim victory."
                                     isActive={false}
                                 />
                             </div>
@@ -466,9 +411,9 @@ export default function HomePage() {
                                 {/* Center content */}
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <div className="text-center">
-                                        <div className="text-6xl font-black text-cyan-400 mb-2">4</div>
+                                        <div className="text-6xl font-black text-cyan-400 mb-2">2</div>
                                         <div className="text-xs tracking-widest text-cyan-200/50">ROUNDS</div>
-                                        <div className="mt-4 text-2xl font-bold text-white">1 WINNER</div>
+                                        <div className="mt-4 text-2xl font-bold text-white">3 WINNERS</div>
                                     </div>
                                 </div>
 
@@ -485,29 +430,6 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* ===== SECTION 4: CTA SECTION ===== */}
-            <section className="relative z-20 py-24 px-6 md:px-20 lg:px-32 bg-gradient-to-t from-cyan-950/20 to-transparent">
-                <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
-                        READY TO <span className="text-cyan-400">COMPETE</span>?
-                    </h2>
-                    <p className="text-lg text-cyan-200/60 mb-10 max-w-2xl mx-auto">
-                        The arena awaits. Register now and prove your algorithmic supremacy.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                        <button
-                            onClick={() => navigate('/team-login')}
-                            className="group relative px-10 py-5 bg-cyan-600 overflow-hidden font-bold tracking-widest text-black hover:text-white transition-colors duration-300 text-lg glow-border"
-                        >
-                            <div className="absolute inset-0 w-0 bg-black transition-all duration-[250ms] ease-out group-hover:w-full"></div>
-                            <span className="relative z-10 flex items-center gap-3 justify-center">
-                                ENTER THE ARENA <ChevronRight size={22} />
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </section>
 
             {/* FOOTER */}
             <footer className="relative z-20 border-t border-cyan-900/30 bg-black/80 backdrop-blur py-8">
