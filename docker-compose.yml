@@ -2,7 +2,7 @@ services:
   # Main Backend
   backend:
     build:
-      context: .
+      context: ./backend/core
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
@@ -24,7 +24,7 @@ services:
   # Execution Server
   execution:
     build:
-      context: ./execution-server
+      context: ./backend/execution-server
       dockerfile: Dockerfile
     ports:
       - "6001:6001"

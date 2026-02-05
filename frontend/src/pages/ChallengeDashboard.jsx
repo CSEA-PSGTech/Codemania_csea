@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import {
     Terminal, Code, Clock, Play, User,
-    Cpu, Zap, Shield, ChevronLeft, AlertTriangle, Loader
+    Cpu, Zap, Shield, ChevronLeft, AlertTriangle, Loader, Lock, CheckCircle
 } from 'lucide-react';
 import API from '../config/api';
 
@@ -102,8 +102,10 @@ const DifficultyBadge = ({ level }) => {
 const ChallengeCard = ({ question, onStart }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [loading, setLoading] = useState(false);
+    const isSolved = question.solved;
 
     const handleStart = () => {
+        if (isSolved) return; // Don't start if already solved
         setLoading(true);
         // Simulate navigation delay
         setTimeout(() => {
@@ -114,23 +116,39 @@ const ChallengeCard = ({ question, onStart }) => {
 
     return (
         <div
-            className="relative group bg-black/60 border border-cyan-900/50 backdrop-blur-md hover:border-cyan-400/50 transition-all duration-300 overflow-hidden flex flex-col h-full"
+            className={`relative group bg-black/60 border backdrop-blur-md transition-all duration-300 overflow-hidden flex flex-col h-full ${
+                isSolved 
+                    ? 'border-green-500/50 opacity-75' 
+                    : 'border-cyan-900/50 hover:border-cyan-400/50'
+            }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
+            {/* Solved Overlay */}
+            {isSolved && (
+                <div className="absolute inset-0 bg-green-900/20 z-20 flex items-center justify-center">
+                    <div className="bg-black/80 border border-green-500 px-6 py-3 flex items-center gap-3">
+                        <CheckCircle className="text-green-500" size={24} />
+                        <span className="text-green-400 font-bold uppercase tracking-widest text-sm">Completed</span>
+                    </div>
+                </div>
+            )}
+
             {/* Hover Glow Effect */}
-            <div className={`absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent transition-opacity duration-300 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent transition-opacity duration-300 pointer-events-none ${isHovered && !isSolved ? 'opacity-100' : 'opacity-0'}`} />
 
             {/* Card Header */}
             <div className="p-6 border-b border-cyan-900/30 relative z-10">
                 <div className="flex justify-between items-start mb-4">
                     <DifficultyBadge level={question.difficulty} />
-                    <div className="flex items-center gap-1 text-cyan-400 font-mono text-sm">
-                        <Zap size={14} />
+                    <div className={`flex items-center gap-1 font-mono text-sm ${isSolved ? 'text-green-400' : 'text-cyan-400'}`}>
+                        {isSolved ? <CheckCircle size={14} /> : <Zap size={14} />}
                         <span className="font-bold">{question.points} PTS</span>
                     </div>
                 </div>
-                <h3 className="text-xl font-bold text-white font-mono group-hover:text-cyan-300 transition-colors">
+                <h3 className={`text-xl font-bold font-mono transition-colors ${
+                    isSolved ? 'text-green-300' : 'text-white group-hover:text-cyan-300'
+                }`}>
                     {question.title}
                 </h3>
             </div>
@@ -152,27 +170,33 @@ const ChallengeCard = ({ question, onStart }) => {
                         <span>{question.timeLimit}</span>
                     </div>
 
-                    <button
-                        onClick={handleStart}
-                        disabled={loading}
-                        className={`
-              relative px-6 py-2 bg-cyan-900/20 border border-cyan-500/30 text-cyan-400 
-              font-bold tracking-widest text-xs uppercase hover:bg-cyan-500 hover:text-black 
-              transition-all duration-300 flex items-center gap-2
-              ${loading ? 'cursor-wait opacity-80' : ''}
-            `}
-                    >
-                        {loading ? (
-                            <>
-                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                INIT_...
-                            </>
-                        ) : (
-                            <>
-                                INITIALIZE <Play size={12} fill="currentColor" />
-                            </>
-                        )}
-                    </button>
+                    {isSolved ? (
+                        <div className="px-6 py-2 bg-green-900/20 border border-green-500/30 text-green-400 font-bold tracking-widest text-xs uppercase flex items-center gap-2">
+                            <Lock size={12} /> LOCKED
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleStart}
+                            disabled={loading}
+                            className={`
+                                relative px-6 py-2 bg-cyan-900/20 border border-cyan-500/30 text-cyan-400 
+                                font-bold tracking-widest text-xs uppercase hover:bg-cyan-500 hover:text-black 
+                                transition-all duration-300 flex items-center gap-2
+                                ${loading ? 'cursor-wait opacity-80' : ''}
+                            `}
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    INIT_...
+                                </>
+                            ) : (
+                                <>
+                                    INITIALIZE <Play size={12} fill="currentColor" />
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -183,6 +207,7 @@ const ChallengeCard = ({ question, onStart }) => {
 export default function ChallengeDashboard() {
     const [booted, setBooted] = useState(false);
     const [questions, setQuestions] = useState([]);
+    const [solvedQuestionIds, setSolvedQuestionIds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -192,9 +217,9 @@ export default function ChallengeDashboard() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Fetch questions from API
+    // Fetch questions and solved status from API
     useEffect(() => {
-        const fetchQuestions = async () => {
+        const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -202,22 +227,29 @@ export default function ChallengeDashboard() {
                     return;
                 }
 
-                const response = await API.get('/questions', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const headers = { Authorization: `Bearer ${token}` };
+
+                // Fetch questions and solved status in parallel
+                const [questionsRes, solvedRes] = await Promise.all([
+                    API.get('/questions', { headers }),
+                    API.get('/submissions/solved', { headers })
+                ]);
+
+                const solved = solvedRes.data.solvedQuestionIds || [];
+                setSolvedQuestionIds(solved);
 
                 // Map API response to match card structure
-                const mappedQuestions = response.data.map(q => ({
+                const mappedQuestions = questionsRes.data.map(q => ({
                     id: q._id,
                     title: q.title,
                     description: q.descriptionWithConstraints,
                     points: q.currentPoints,
                     totalPoints: q.totalPoints,
                     teamsSolved: q.noOfTeamsSolved,
-                    // Derive difficulty from points (can be adjusted based on your logic)
                     difficulty: q.totalPoints <= 100 ? 'Easy' : q.totalPoints <= 200 ? 'Medium' : 'Hard',
                     category: 'Code Optimization',
-                    timeLimit: `${Math.ceil(q.timeLimit / 1000 / 60)} min`
+                    timeLimit: `${Math.ceil(q.timeLimit / 1000 / 60)} min`,
+                    solved: solved.includes(q._id)
                 }));
 
                 setQuestions(mappedQuestions);
@@ -234,10 +266,14 @@ export default function ChallengeDashboard() {
             }
         };
 
-        fetchQuestions();
+        fetchData();
     }, [navigate]);
 
     const handleStartChallenge = (id) => {
+        const question = questions.find(q => q.id === id);
+        if (question?.solved) {
+            return; // Don't navigate if already solved
+        }
         console.log(`[System] Mounting IDE environment for Challenge ID: ${id}`);
         navigate(`/ide/${id}`);
     };

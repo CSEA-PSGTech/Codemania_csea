@@ -21,6 +21,7 @@ exports.createQuestion = async (req, res) => {
       title,
       descriptionWithConstraints,
       nonOptimizedCode,
+      nonOptimizedCodeJava,
       totalPoints,
       testcases
     } = req.body;
@@ -29,6 +30,7 @@ exports.createQuestion = async (req, res) => {
       title,
       descriptionWithConstraints,
       nonOptimizedCode,
+      nonOptimizedCodeJava,
       totalPoints,
       currentPoints: totalPoints, // starts at max
       testcases
@@ -53,6 +55,7 @@ exports.updateQuestion = async (req, res) => {
       title,
       descriptionWithConstraints,
       nonOptimizedCode,
+      nonOptimizedCodeJava,
       totalPoints,
       currentPoints,
       testcases
@@ -64,6 +67,7 @@ exports.updateQuestion = async (req, res) => {
         title,
         descriptionWithConstraints,
         nonOptimizedCode,
+        nonOptimizedCodeJava,
         totalPoints,
         currentPoints,
         testcases

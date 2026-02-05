@@ -28,6 +28,20 @@ exports.submitCode = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
+    // Check if team already solved this question
+    const alreadySolved = await Submission.findOne({
+      teamId,
+      questionId,
+      isCorrect: true
+    });
+
+    if (alreadySolved) {
+      return res.status(400).json({ 
+        message: "You have already solved this question",
+        alreadySolved: true
+      });
+    }
+
     // Format test cases for execution server
     const testCases = question.testcases.map((tc) => ({
       input: tc.input || "",
@@ -232,6 +246,27 @@ exports.runCode = async (req, res) => {
     }
   } catch (error) {
     console.error("Run code error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Get list of solved question IDs for current team
+exports.getSolvedQuestions = async (req, res) => {
+  try {
+    const teamId = req.teamId;
+
+    // Find all correct submissions for this team
+    const solvedSubmissions = await Submission.find({
+      teamId,
+      isCorrect: true
+    }).select("questionId");
+
+    // Extract unique question IDs
+    const solvedQuestionIds = [...new Set(solvedSubmissions.map(s => s.questionId.toString()))];
+
+    res.json({ solvedQuestionIds });
+  } catch (error) {
+    console.error("Get solved questions error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

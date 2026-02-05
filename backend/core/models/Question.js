@@ -14,6 +14,7 @@ const QuestionSchema = new mongoose.Schema(
     title: { type: String, required: true },
     descriptionWithConstraints: { type: String, required: true },
     nonOptimizedCode: { type: String, required: true },
+    nonOptimizedCodeJava: { type: String, default: '' },
 
     totalPoints: { type: Number, required: true },
     currentPoints: { type: Number, required: true },

@@ -382,6 +382,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
         title: '',
         descriptionWithConstraints: '',
         nonOptimizedCode: '',
+        nonOptimizedCodeJava: '',
         totalPoints: 100
     });
     
@@ -462,13 +463,23 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-cyan-400 uppercase">Non-Optimized Code (O(n²) starter)</label>
+                            <label className="text-xs text-cyan-400 uppercase">Python Non-Optimized Code (O(n²) starter)</label>
                             <textarea
                                 required
                                 className="w-full h-32 bg-black border border-cyan-900 p-2 text-gray-400 focus:border-cyan-400 focus:outline-none font-mono text-xs"
                                 placeholder="# Paste the non-optimized Python code here..."
                                 value={formData.nonOptimizedCode}
                                 onChange={e => setFormData({ ...formData, nonOptimizedCode: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs text-orange-400 uppercase">Java Non-Optimized Code (O(n²) starter)</label>
+                            <textarea
+                                className="w-full h-32 bg-black border border-orange-900 p-2 text-gray-400 focus:border-orange-400 focus:outline-none font-mono text-xs"
+                                placeholder="// Paste the non-optimized Java code here...\nimport java.util.*;\npublic class Main { ... }"
+                                value={formData.nonOptimizedCodeJava}
+                                onChange={e => setFormData({ ...formData, nonOptimizedCodeJava: e.target.value })}
                             />
                         </div>
 
@@ -559,6 +570,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
         title: question.title || '',
         descriptionWithConstraints: question.descriptionWithConstraints || '',
         nonOptimizedCode: question.nonOptimizedCode || '',
+        nonOptimizedCodeJava: question.nonOptimizedCodeJava || '',
         totalPoints: question.totalPoints || 100
     });
     
@@ -641,13 +653,23 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-yellow-400 uppercase">Non-Optimized Code (O(n²) starter)</label>
+                            <label className="text-xs text-yellow-400 uppercase">Python Non-Optimized Code (O(n²) starter)</label>
                             <textarea
                                 required
                                 className="w-full h-32 bg-black border border-yellow-900 p-2 text-gray-400 focus:border-yellow-400 focus:outline-none font-mono text-xs"
                                 placeholder="# Paste the non-optimized Python code here..."
                                 value={formData.nonOptimizedCode}
                                 onChange={e => setFormData({ ...formData, nonOptimizedCode: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs text-orange-400 uppercase">Java Non-Optimized Code (O(n²) starter)</label>
+                            <textarea
+                                className="w-full h-32 bg-black border border-orange-900 p-2 text-gray-400 focus:border-orange-400 focus:outline-none font-mono text-xs"
+                                placeholder="// Paste the non-optimized Java code here...\nimport java.util.*;\npublic class Main { ... }"
+                                value={formData.nonOptimizedCodeJava}
+                                onChange={e => setFormData({ ...formData, nonOptimizedCodeJava: e.target.value })}
                             />
                         </div>
 

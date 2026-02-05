@@ -6,6 +6,9 @@ const { verifyToken } = require("../middleware/auth");
 // @route   POST /api/submissions/run - Run code without saving (for testing)
 router.post("/run", verifyToken, submissionController.runCode);
 
+// @route   GET /api/submissions/solved - Get list of solved question IDs
+router.get("/solved", verifyToken, submissionController.getSolvedQuestions);
+
 // @route   POST /api/submissions
 router.post("/", verifyToken, submissionController.submitCode);
 

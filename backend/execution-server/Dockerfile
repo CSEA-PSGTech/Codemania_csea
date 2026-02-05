@@ -30,6 +30,10 @@ COPY . .
 # Create temp directory for code execution
 RUN mkdir -p /app/temp
 
+# Create symlinks for Java binaries (Eclipse Temurin puts them in /opt/java/openjdk/bin/)
+RUN ln -sf $JAVA_HOME/bin/java /usr/bin/java && \
+    ln -sf $JAVA_HOME/bin/javac /usr/bin/javac
+
 # Expose port
 EXPOSE 6001
 

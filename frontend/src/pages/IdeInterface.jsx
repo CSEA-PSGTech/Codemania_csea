@@ -155,6 +155,7 @@ export default function IdeInterface() {
     const [timer, setTimer] = useState(0);
     const [copied, setCopied] = useState(false);
     const [serverOnline, setServerOnline] = useState(null); // null = checking, true = online, false = offline
+    const [isSolved, setIsSolved] = useState(false); // Track if question is already solved
 
     // Check server health on mount
     useEffect(() => {
@@ -186,11 +187,20 @@ export default function IdeInterface() {
                     return;
                 }
 
-                const response = await apiClient.get(`/questions/${problemId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const headers = { Authorization: `Bearer ${token}` };
 
-                const data = response.data;
+                // Fetch problem and solved status in parallel
+                const [problemRes, solvedRes] = await Promise.all([
+                    apiClient.get(`/questions/${problemId}`, { headers }),
+                    apiClient.get('/submissions/solved', { headers })
+                ]);
+
+                const data = problemRes.data;
+                const solvedIds = solvedRes.data.solvedQuestionIds || [];
+                
+                // Check if this question is already solved
+                const questionSolved = solvedIds.includes(problemId);
+                setIsSolved(questionSolved);
                 
                 // Map API response to expected problem structure
                 const mappedProblem = {
@@ -198,6 +208,7 @@ export default function IdeInterface() {
                     title: data.title,
                     description: data.descriptionWithConstraints,
                     nonOptimizedCode: data.nonOptimizedCode,
+                    nonOptimizedCodeJava: data.nonOptimizedCodeJava,
                     points: data.currentPoints,
                     totalPoints: data.totalPoints,
                     teamsSolved: data.noOfTeamsSolved,
@@ -218,8 +229,7 @@ export default function IdeInterface() {
                     // For code optimization, the starter code is the non-optimized code
                     starterCode: {
                         python: data.nonOptimizedCode || '# Write your optimized code here',
-                        java: '// Write your optimized Java code here',
-                        c: '// Write your optimized C code here'
+                        java: data.nonOptimizedCodeJava || '// Write your optimized Java code here\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}'
                     }
                 };
 
@@ -330,6 +340,16 @@ export default function IdeInterface() {
     };
 
     const handleSubmit = async () => {
+        if (isSolved) {
+            setOutput({
+                status: 'Already Solved',
+                details: 'You have already solved this question. Each question can only be submitted once.',
+                passed: true
+            });
+            setConsoleOpen(true);
+            return;
+        }
+
         setIsSubmitting(true);
         setConsoleOpen(true);
         setOutput(null);
@@ -352,6 +372,11 @@ export default function IdeInterface() {
 
             const result = response.data;
             const passed = result.submission?.isCorrect || false;
+            
+            // If submission was successful and accepted, mark as solved
+            if (passed) {
+                setIsSolved(true);
+            }
             
             setOutput({
                 status: passed ? 'Accepted' :
@@ -493,12 +518,20 @@ export default function IdeInterface() {
                         </button>
                         <button
                             onClick={handleSubmit}
-                            disabled={isRunning || isSubmitting}
-                            className={`px-4 py-1.5 bg-cyan-600 text-black border border-cyan-500 text-xs font-bold uppercase tracking-wider 
-                hover:bg-cyan-400 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(34,211,238,0.3)]
+                            disabled={isRunning || isSubmitting || isSolved}
+                            className={`px-4 py-1.5 border text-xs font-bold uppercase tracking-wider 
+                transition-all flex items-center gap-2
+                ${isSolved 
+                    ? 'bg-green-900/50 text-green-400 border-green-500 cursor-not-allowed' 
+                    : 'bg-cyan-600 text-black border-cyan-500 hover:bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]'
+                }
                 ${(isRunning || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            {isSubmitting ? (
+                            {isSolved ? (
+                                <>
+                                    <CheckCircle size={12} /> Solved
+                                </>
+                            ) : isSubmitting ? (
                                 <>
                                     <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                     Judging...
