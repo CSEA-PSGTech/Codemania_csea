@@ -299,8 +299,6 @@ export default function HomePage() {
                         <span className="font-bold tracking-[0.2em] text-lg">CODEMANIA_SYS</span>
                     </div>
                     <div className="flex gap-8 text-xs font-bold tracking-widest text-cyan-200/50">
-                        <span className="hidden md:inline">LOC: SECTOR_07</span>
-                        <span className="hidden md:inline">NET: SECURE</span>
                         <span className="animate-pulse text-cyan-400">ONLINE</span>
                     </div>
                 </header>
@@ -335,9 +333,9 @@ export default function HomePage() {
                                 className="text-xl md:text-2xl text-cyan-100/70 max-w-2xl font-light tracking-wide"
                                 style={{ animation: 'fadeInUp 1s ease-out 0.6s backwards' }}
                             >
-                                The ultimate algorithmic battleground.
+                                Optimize. Outperform. Outsmart.
                                 <br />
-                                <span className="text-white font-bold">Hack the system. Claim the glory.</span>
+                                <span className="text-white font-bold">Transform O(n²) into O(n). Climb the ranks.</span>
                             </p>
                         </div>
 

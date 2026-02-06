@@ -39,6 +39,7 @@ function AppContent() {
           mouseReact
           mouseStrength={0.3}
           brightness={0.7}
+          pageLoadAnimation={false}
           className="bg"
         />
       )}

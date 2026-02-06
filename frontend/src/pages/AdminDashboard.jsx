@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Terminal, Users, Code, Activity, Trash2, RotateCcw, Save, X, Plus, AlertTriangle, Loader, Edit, Eye } from 'lucide-react';
+import { Terminal, Users, Code, Activity, Trash2, RotateCcw, Save, X, Plus, AlertTriangle, Loader, Edit, Eye, Trophy } from 'lucide-react';
 import apiClient from '../config/api';
 
 // --- MAIN COMPONENT ---
@@ -20,6 +20,7 @@ export default function AdminDashboard() {
     const [questions, setQuestions] = useState([]);
     const [teams, setTeams] = useState([]);
     const [submissions, setSubmissions] = useState([]);
+    const [leaderboard, setLeaderboard] = useState([]);
 
     // Loading/Glitch State
     const [loading, setLoading] = useState(true);
@@ -43,16 +44,18 @@ export default function AdminDashboard() {
                 const headers = { Authorization: `Bearer ${token}` };
 
                 // Fetch all data in parallel
-                const [questionsRes, teamsRes, submissionsRes, statsRes] = await Promise.all([
+                const [questionsRes, teamsRes, submissionsRes, statsRes, leaderboardRes] = await Promise.all([
                     apiClient.get('/admin/questions', { headers }),
                     apiClient.get('/admin/teams', { headers }),
                     apiClient.get('/admin/submissions', { headers }),
-                    apiClient.get('/admin/stats', { headers }).catch(() => ({ data: null }))
+                    apiClient.get('/admin/stats', { headers }).catch(() => ({ data: null })),
+                    apiClient.get('/leaderboard').catch(() => ({ data: [] }))
                 ]);
 
                 setQuestions(questionsRes.data || []);
                 setTeams(teamsRes.data || []);
                 setSubmissions(submissionsRes.data || []);
+                setLeaderboard(leaderboardRes.data || []);
 
                 // Calculate stats if not returned by API
                 if (statsRes.data) {
@@ -162,7 +165,7 @@ export default function AdminDashboard() {
     // Handle logout
     const handleLogout = () => {
         localStorage.removeItem('adminToken');
-        navigate('/admin/login');
+        window.location.href = '/';
     };
 
     if (loading) {
@@ -235,6 +238,7 @@ export default function AdminDashboard() {
                     <NavButton active={activeTab === 'QUESTIONS'} onClick={() => setActiveTab('QUESTIONS')} icon={<Code />} label="CHALLENGES" />
                     <NavButton active={activeTab === 'TEAMS'} onClick={() => setActiveTab('TEAMS')} icon={<Users />} label="PLAYER DATABASE" />
                     <NavButton active={activeTab === 'SUBMISSIONS'} onClick={() => setActiveTab('SUBMISSIONS')} icon={<Terminal />} label="LIVE LOGS" />
+                    <NavButton active={activeTab === 'LEADERBOARD'} onClick={() => setActiveTab('LEADERBOARD')} icon={<Trophy />} label="LEADERBOARD" />
                 </nav>
 
                 {/* CONTENT AREA */}
@@ -243,6 +247,7 @@ export default function AdminDashboard() {
                     {activeTab === 'QUESTIONS' && <QuestionManager questions={questions} onCreate={handleCreateQuestion} onDelete={handleDeleteQuestion} onUpdate={handleUpdateQuestion} />}
                     {activeTab === 'TEAMS' && <TeamManager teams={teams} onReset={handleResetTeam} onDelete={handleDeleteTeam} />}
                     {activeTab === 'SUBMISSIONS' && <SubmissionLog submissions={submissions} />}
+                    {activeTab === 'LEADERBOARD' && <LeaderboardPanel leaderboard={leaderboard} />}
                 </main>
             </div>
         </div>
@@ -940,6 +945,75 @@ const SubmissionLog = ({ submissions }) => (
                 </div>
             ))}
             <div className="animate-pulse text-cyan-400">_</div>
+        </div>
+    </div>
+);
+
+const LeaderboardPanel = ({ leaderboard }) => (
+    <div className="space-y-6">
+        <div className="flex justify-between items-center border-b border-cyan-900 pb-4">
+            <h2 className="text-2xl text-white tracking-widest uppercase flex items-center gap-3">
+                <Trophy className="text-yellow-500" size={24} />
+                Live Leaderboard
+            </h2>
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 animate-pulse rounded-full"></div>
+                <span className="text-xs text-cyan-500 uppercase tracking-wider">Live • {leaderboard.length} Teams</span>
+            </div>
+        </div>
+
+        <div className="border border-cyan-900/50 bg-black/40 overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-cyan-900/20 border-b border-cyan-900/30 text-xs text-cyan-400 uppercase tracking-wider">
+                <div className="col-span-1">Rank</div>
+                <div className="col-span-5">Name</div>
+                <div className="col-span-2 text-center">Solved</div>
+                <div className="col-span-2 text-center">Score</div>
+                <div className="col-span-2 text-center">Submissions</div>
+            </div>
+
+            {/* Teams List */}
+            {leaderboard.length === 0 ? (
+                <div className="p-8 text-center text-cyan-500/60">
+                    No teams on leaderboard yet
+                </div>
+            ) : (
+                <div className="divide-y divide-cyan-900/20 max-h-[60vh] overflow-y-auto">
+                    {leaderboard.map((team, idx) => (
+                        <div 
+                            key={team.teamName}
+                            className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors hover:bg-cyan-900/10 ${
+                                idx === 0 ? 'bg-yellow-500/5' : 
+                                idx === 1 ? 'bg-gray-400/5' : 
+                                idx === 2 ? 'bg-orange-500/5' : ''
+                            }`}
+                        >
+                            <div className="col-span-1">
+                                {idx === 0 ? (
+                                    <span className="text-2xl">🥇</span>
+                                ) : idx === 1 ? (
+                                    <span className="text-2xl">🥈</span>
+                                ) : idx === 2 ? (
+                                    <span className="text-2xl">🥉</span>
+                                ) : (
+                                    <span className="text-white font-bold text-lg">{team.rank}</span>
+                                )}
+                            </div>
+                            <div className="col-span-5">
+                                <div className="text-white font-bold">{team.teamName}</div>
+                                <div className="text-cyan-400/40 text-xs">{team.collegeName || ''}</div>
+                            </div>
+                            <div className="col-span-2 text-center">
+                                <span className="text-green-400 font-bold">{team.solvedCount}</span>
+                            </div>
+                            <div className="col-span-2 text-center">
+                                <span className="text-yellow-400 font-bold text-xl">{team.totalPoints}</span>
+                            </div>
+                            <div className="col-span-2 text-center text-cyan-500">{team.totalSubmissions}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     </div>
 );
