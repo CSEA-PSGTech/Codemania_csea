@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import * as THREE from 'three';
 import {
     Terminal, Play, Cpu, ChevronLeft, ChevronDown,
     Settings, Maximize2, RotateCcw, CheckCircle,
@@ -15,66 +14,22 @@ const LANGUAGES = {
     java: { name: "Java", extension: ".java" }
 };
 
-// --- 3D BACKGROUND COMPONENT (Matching CyberCore from ChallengeDashboard) ---
-const CyberCore = () => {
-    const mountRef = useRef(null);
-
-    useEffect(() => {
-        if (!mountRef.current) return;
-
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.002);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        mountRef.current.appendChild(renderer.domElement);
-
-        // Particles (Cyan Theme)
-        const geometry = new THREE.BufferGeometry();
-        const count = 1500;
-        const positions = new Float32Array(count * 3);
-        for (let i = 0; i < count * 3; i++) positions[i] = (Math.random() - 0.5) * 60;
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const material = new THREE.PointsMaterial({
-            size: 0.12,
-            color: 0x22d3ee,
-            transparent: true,
-            opacity: 0.4,
-            blending: THREE.AdditiveBlending,
-        });
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
-
-        // Grid Floor
-        const gridHelper = new THREE.GridHelper(100, 50, 0x0891b2, 0x083344);
-        gridHelper.position.y = -15;
-        scene.add(gridHelper);
-
-        const animate = () => {
-            requestAnimationFrame(animate);
-            particles.rotation.y += 0.0005;
-            gridHelper.rotation.y -= 0.0005;
-            const time = Date.now() * 0.001;
-            particles.position.y = Math.sin(time * 0.3) * 1;
-            renderer.render(scene, camera);
-        };
-        animate();
-
-        const handleResize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (mountRef.current) mountRef.current.removeChild(renderer.domElement);
-        };
-    }, []);
-
-    return <div ref={mountRef} className="fixed inset-0 z-0 pointer-events-none" />;
-};
+// --- CSS-ONLY BACKGROUND (zero JS, matches CyberCore look) ---
+const CyberBackground = () => (
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/20 via-black to-black" />
+        <div className="absolute inset-0 opacity-[0.05]" style={{
+            backgroundImage: 'linear-gradient(rgba(34,211,238,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.4) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+            transform: 'perspective(500px) rotateX(60deg)',
+            transformOrigin: 'center top',
+            top: '50%'
+        }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(1px 1px at 20% 30%, rgba(34,211,238,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 50% 60%, rgba(34,211,238,0.2) 0%, transparent 100%), radial-gradient(1px 1px at 80% 40%, rgba(34,211,238,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 60% 80%, rgba(34,211,238,0.2) 0%, transparent 100%)' }} />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-cyan-500/[0.02] rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80" />
+    </div>
+);
 
 // --- SUB-COMPONENTS ---
 
@@ -445,8 +400,7 @@ export default function IdeInterface() {
         <div className="flex flex-col h-screen bg-black text-white font-mono overflow-hidden selection:bg-cyan-500 selection:text-black">
 
             {/* BACKGROUND */}
-            <CyberCore />
-            <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <CyberBackground />
 
             {/* --- GLOBAL STYLES --- */}
             <style>{`

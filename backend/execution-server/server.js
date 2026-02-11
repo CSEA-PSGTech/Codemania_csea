@@ -3,12 +3,44 @@ require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const express = require("express");
 const cors = require("cors");
 const { runCode } = require("./utils/runner");
+const { pool: jvmPool } = require("./utils/jvmPool");
 
 const app = express();
 const PORT = process.env.EXECUTION_PORT || 6001;  // Use EXECUTION_PORT, not PORT
 const EXECUTION_SECRET = process.env.EXECUTION_SECRET;
 const MAX_CODE_SIZE = parseInt(process.env.MAX_CODE_SIZE) || 50000;
 const DEFAULT_TIME_LIMIT = parseInt(process.env.DEFAULT_TIME_LIMIT) || 2000;
+
+// ==================== CONCURRENCY LIMITER ====================
+// Limits parallel code executions to prevent CPU thrashing
+// Extra requests wait in queue instead of all running at once
+const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT) || 2;
+let activeJobs = 0;
+const jobQueue = [];
+
+function enqueue(fn) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      activeJobs++;
+      fn()
+        .then(resolve)
+        .catch(reject)
+        .finally(() => {
+          activeJobs--;
+          if (jobQueue.length > 0) {
+            const next = jobQueue.shift();
+            next();
+          }
+        });
+    };
+
+    if (activeJobs < MAX_CONCURRENT) {
+      run();
+    } else {
+      jobQueue.push(run);
+    }
+  });
+}
 
 // Middleware
 app.use(cors());
@@ -42,6 +74,10 @@ app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     port: PORT,
+    activeJobs,
+    queueLength: jobQueue.length,
+    maxConcurrent: MAX_CONCURRENT,
+    jvmPool: jvmPool.initialized ? "active" : "inactive",
     timestamp: new Date().toISOString(),
   });
 });
@@ -88,15 +124,17 @@ app.post("/execute", verifySecret, async (req, res) => {
     }
 
     console.log(
-      `[${new Date().toISOString()}] Executing ${language} code - ${testCases.length} test cases`
+      `[${new Date().toISOString()}] Executing ${language} code - ${testCases.length} test cases | Queue: ${jobQueue.length} | Active: ${activeJobs}/${MAX_CONCURRENT}`
     );
 
-    // Run the code
-    const result = await runCode(
-      code,
-      language.toLowerCase(),
-      testCases,
-      timeLimit || DEFAULT_TIME_LIMIT
+    // Run the code through concurrency limiter
+    const result = await enqueue(() =>
+      runCode(
+        code,
+        language.toLowerCase(),
+        testCases,
+        timeLimit || DEFAULT_TIME_LIMIT
+      )
     );
 
     const totalTime = Date.now() - startTime;
@@ -144,9 +182,13 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Start server — initialize JVM pool first, then listen
+(async () => {
+  // Initialize warm JVM worker pool (non-blocking — server starts even if pool fails)
+  await jvmPool.init();
+
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║         CodeMania Execution Server                        ║
 ╠════════════════════════════════════════════════════════════╣
@@ -154,6 +196,13 @@ app.listen(PORT, () => {
 ║  Secret:      ${EXECUTION_SECRET ? "Configured ✓" : "NOT SET ⚠️"}                             ║
 ║  Time Limit:  ${DEFAULT_TIME_LIMIT}ms                                      ║
 ║  Max Code:    ${MAX_CODE_SIZE} chars                                 ║
+║  Concurrency: ${MAX_CONCURRENT} parallel jobs                             ║
+║  JVM Pool:    ${jvmPool.initialized ? "Active ✓" : "Inactive (fallback mode)"}                   ║
 ╚════════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+})();
+
+// Graceful shutdown
+process.on("SIGINT",  () => { jvmPool.shutdown(); process.exit(0); });
+process.on("SIGTERM", () => { jvmPool.shutdown(); process.exit(0); });

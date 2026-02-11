@@ -67,7 +67,7 @@ exports.submitCode = async (req, res) => {
         },
         {
           headers: { "x-execution-secret": EXECUTION_SECRET },
-          timeout: 30000 // 30 second max wait
+          timeout: 120000 // 120 second max wait (Java can be slow with multiple test cases)
         }
       );
       execResult = execResponse.data;

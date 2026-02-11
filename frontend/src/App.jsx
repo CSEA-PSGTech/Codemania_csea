@@ -1,14 +1,23 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import FaultyTerminal from "./components/FaultyTerminal.jsx";
 import TargetCursor from "./components/TargetCursor.jsx";
-import TeamLogin from "./pages/TeamLogin.jsx";
-import AdminLogin from "./pages/AdminLogin.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
-import HomePage from "./pages/Home.jsx";
-import ChallengeDashboard from "./pages/ChallengeDashboard.jsx";
-import IdeInterface from "./pages/IdeInterface.jsx";
+import FaultyTerminal from "./components/FaultyTerminal.jsx";
 import "./styles/App.css";
+
+// Lazy load all pages - each gets its own chunk
+const TeamLogin = lazy(() => import("./pages/TeamLogin.jsx"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin.jsx"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard.jsx"));
+const HomePage = lazy(() => import("./pages/Home.jsx"));
+const ChallengeDashboard = lazy(() => import("./pages/ChallengeDashboard.jsx"));
+const IdeInterface = lazy(() => import("./pages/IdeInterface.jsx"));
+
+// Minimal loading fallback (lightweight, no heavy deps)
+const PageLoader = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#000', color: '#22d3ee', fontFamily: 'monospace', fontSize: '14px' }}>
+    Loading...
+  </div>
+);
 
 // Inner component that uses useLocation (must be inside Router)
 function AppContent() {
@@ -45,7 +54,8 @@ function AppContent() {
       )}
 
       <div className={hasOwnBackground ? "" : "content-layer"}>
-        <Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/team-login" element={<TeamLogin />} />
@@ -56,6 +66,7 @@ function AppContent() {
           <Route path="/challenges" element={<ChallengeDashboard />} />
           <Route path="/ide/:problemId" element={<IdeInterface />} />
         </Routes>
+        </Suspense>
       </div>
     </div>
   );

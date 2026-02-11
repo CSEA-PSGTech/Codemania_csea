@@ -1,73 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as THREE from 'three';
 import {
     Terminal, Code, Clock, Play, User,
     Cpu, Zap, Shield, ChevronLeft, AlertTriangle, Loader, Lock, CheckCircle, Trophy, X, RotateCcw
 } from 'lucide-react';
 import API from '../config/api';
 
-// --- 3D BACKGROUND COMPONENT (Cyan Theme) ---
-const CyberCore = () => {
-    const mountRef = useRef(null);
-
-    useEffect(() => {
-        if (!mountRef.current) return;
-
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.002);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        mountRef.current.appendChild(renderer.domElement);
-
-        // Particles (Cyan Theme)
-        const geometry = new THREE.BufferGeometry();
-        const count = 2000;
-        const positions = new Float32Array(count * 3);
-        for (let i = 0; i < count * 3; i++) positions[i] = (Math.random() - 0.5) * 60;
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const material = new THREE.PointsMaterial({
-            size: 0.15,
-            color: 0x22d3ee, // Cyan-400
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending,
-        });
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
-
-        // Grid Floor
-        const gridHelper = new THREE.GridHelper(100, 50, 0x0891b2, 0x083344);
-        gridHelper.position.y = -10;
-        scene.add(gridHelper);
-
-        const animate = () => {
-            requestAnimationFrame(animate);
-            particles.rotation.y += 0.001;
-            gridHelper.rotation.y -= 0.001;
-            // Gentle floating
-            const time = Date.now() * 0.001;
-            particles.position.y = Math.sin(time * 0.5) * 2;
-            renderer.render(scene, camera);
-        };
-        animate();
-
-        const handleResize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (mountRef.current) mountRef.current.removeChild(renderer.domElement);
-        };
-    }, []);
-
-    return <div ref={mountRef} className="fixed inset-0 z-0 pointer-events-none" />;
-};
+// --- CSS-ONLY BACKGROUND (zero JS, zero bundle cost) ---
+const CyberBackground = () => (
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Animated gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/30 via-black to-black" />
+        {/* Grid lines */}
+        <div className="absolute inset-0 opacity-[0.07]" style={{
+            backgroundImage: 'linear-gradient(rgba(34,211,238,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.4) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+            transform: 'perspective(500px) rotateX(60deg)',
+            transformOrigin: 'center top',
+            top: '40%'
+        }} />
+        {/* Floating particles via CSS */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(1px 1px at 20% 30%, rgba(34,211,238,0.4) 0%, transparent 100%), radial-gradient(1px 1px at 40% 70%, rgba(34,211,238,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 60% 20%, rgba(34,211,238,0.5) 0%, transparent 100%), radial-gradient(1px 1px at 80% 50%, rgba(34,211,238,0.3) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 15% 80%, rgba(34,211,238,0.4) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 50% 50%, rgba(34,211,238,0.3) 0%, transparent 100%), radial-gradient(1px 1px at 70% 85%, rgba(34,211,238,0.4) 0%, transparent 100%), radial-gradient(1px 1px at 90% 15%, rgba(34,211,238,0.3) 0%, transparent 100%)' }} />
+        {/* Ambient glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/[0.03] rounded-full blur-[100px]" />
+        {/* Top fade */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80" />
+    </div>
+);
 
 // --- SUB-COMPONENTS ---
 
@@ -116,7 +75,7 @@ const ChallengeCard = ({ question, onStart }) => {
 
     return (
         <div
-            className={`relative group bg-black/60 border backdrop-blur-md transition-all duration-300 overflow-hidden flex flex-col h-full ${
+            className={`relative group bg-black/90 border transition-all duration-300 overflow-hidden flex flex-col h-full ${
                 isSolved 
                     ? 'border-green-500/50 opacity-75' 
                     : 'border-cyan-900/50 hover:border-cyan-400/50'
@@ -205,7 +164,6 @@ const ChallengeCard = ({ question, onStart }) => {
 
 // --- MAIN PAGE COMPONENT ---
 export default function ChallengeDashboard() {
-    const [booted, setBooted] = useState(false);
     const [questions, setQuestions] = useState([]);
     const [solvedQuestionIds, setSolvedQuestionIds] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -216,11 +174,6 @@ export default function ChallengeDashboard() {
     const [currentTeam, setCurrentTeam] = useState(null);
     const [myRank, setMyRank] = useState(null);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const timer = setTimeout(() => setBooted(true), 100);
-        return () => clearTimeout(timer);
-    }, []);
 
     // Fetch questions and solved status from API
     useEffect(() => {
@@ -317,26 +270,11 @@ export default function ChallengeDashboard() {
     return (
         <div className="min-h-screen bg-black text-white font-mono selection:bg-cyan-500 selection:text-black overflow-x-hidden relative">
 
-            {/* GLOBAL ANIMATIONS */}
-            <style>{`
-        @keyframes scanline {
-          0% { background-position: 0% 0%; }
-          100% { background-position: 0% 100%; }
-        }
-        .scanlines {
-          background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-          background-size: 100% 4px;
-          animation: scanline 0.2s linear infinite;
-        }
-      `}</style>
-
-            {/* BACKGROUND LAYERS */}
-            <CyberCore />
-            <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-t from-black via-black/50 to-transparent" />
-            <div className="fixed inset-0 z-0 pointer-events-none scanlines opacity-10" />
+            {/* BACKGROUND LAYERS - Pure CSS, no Three.js */}
+            <CyberBackground />
 
             {/* HEADER */}
-            <header className={`relative z-20 border-b border-cyan-900/30 bg-black/80 backdrop-blur-md sticky top-0 transition-opacity duration-1000 ${booted ? 'opacity-100' : 'opacity-0'}`}>
+            <header className={`relative z-20 border-b border-cyan-900/30 bg-black/95 sticky top-0`}>
                 <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
 
                     <div className="flex items-center gap-3">
@@ -568,7 +506,7 @@ export default function ChallengeDashboard() {
             `}</style>
 
             {/* MAIN CONTENT */}
-            <main className={`relative z-10 max-w-7xl mx-auto px-6 py-12 transition-all duration-1000 delay-300 ${booted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
 
                 {/* Intro Section */}
                 <div className="mb-12 border-l-2 border-cyan-500 pl-6">
@@ -602,9 +540,26 @@ export default function ChallengeDashboard() {
 
                 {/* Questions Grid */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20">
-                        <Loader size={40} className="text-cyan-400 animate-spin mb-4" />
-                        <p className="text-cyan-500/60 text-sm uppercase tracking-widest">Loading Protocols...</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1,2,3,4,5,6].map(i => (
+                            <div key={i} className="bg-black/90 border border-cyan-900/30 p-6 animate-pulse">
+                                <div className="flex justify-between mb-4">
+                                    <div className="h-5 w-16 bg-cyan-900/30 rounded" />
+                                    <div className="h-5 w-20 bg-cyan-900/30 rounded" />
+                                </div>
+                                <div className="h-6 w-3/4 bg-cyan-900/20 rounded mb-6" />
+                                <div className="h-3 w-20 bg-cyan-900/20 rounded mb-3" />
+                                <div className="space-y-2 mb-6">
+                                    <div className="h-3 w-full bg-cyan-900/10 rounded" />
+                                    <div className="h-3 w-5/6 bg-cyan-900/10 rounded" />
+                                    <div className="h-3 w-2/3 bg-cyan-900/10 rounded" />
+                                </div>
+                                <div className="flex justify-between pt-4 border-t border-cyan-900/30">
+                                    <div className="h-5 w-12 bg-cyan-900/20 rounded" />
+                                    <div className="h-8 w-28 bg-cyan-900/20 rounded" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center py-20 border border-red-500/30 bg-red-900/10">

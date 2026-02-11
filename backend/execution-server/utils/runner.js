@@ -2,6 +2,7 @@ const { spawn } = require("child_process");
 const fs = require("fs").promises;
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const { pool: jvmPool } = require("./jvmPool");
 
 const PYTHON_PATH = process.env.PYTHON_PATH || "python";
 const JAVA_PATH = process.env.JAVA_PATH || "java";
@@ -47,18 +48,38 @@ async function runCode(code, language, testCases, timeLimit = 2000) {
       }
     }
 
-    // Run against each test case
+    // ── Run test cases ──
+    // For Java: use warm JVM pool (no cold-start), fall back to per-process if pool unavailable
+    if (language === "java" && jvmPool.initialized) {
+      try {
+        return await jvmPool.runTests(tempDir, className, testCases, timeLimit);
+      } catch (poolErr) {
+        console.warn("[Java] Pool execution failed, falling back to per-process:", poolErr.message);
+        // Fall through to per-process execution below
+      }
+    }
+
+    // Per-process execution (Python, C, or Java fallback)
     const results = [];
     let finalVerdict = "AC";
 
+    // For Java fallback: measure JVM startup overhead to compensate timeouts
+    let jvmOverhead = 0;
+    if (language === "java") {
+      jvmOverhead = await measureJvmStartup(tempDir, className);
+      console.log(`[Java fallback] JVM startup overhead: ${jvmOverhead}ms`);
+    }
+
     for (let i = 0; i < testCases.length; i++) {
       const testCase = testCases[i];
+
       const result = await runTestCase(
         language,
         tempDir,
         className,
         testCase,
-        timeLimit
+        timeLimit,      // original timeLimit — runTestCase adds jvmOverhead internally
+        jvmOverhead
       );
 
       results.push({
@@ -67,7 +88,7 @@ async function runCode(code, language, testCases, timeLimit = 2000) {
         hidden: testCase.hidden || false,
       });
 
-      // Stop on first failure (optional - can change to run all)
+      // Stop on first failure
       if (result.verdict !== "AC") {
         finalVerdict = result.verdict;
         break;
@@ -205,9 +226,38 @@ async function compileC(filePath, tempDir) {
 }
 
 /**
+ * Measure JVM startup time by running a trivial program.
+ * This runs once per submission, the result is used to offset timeouts for all test cases.
+ */
+async function measureJvmStartup(tempDir, className) {
+  const markerFile = path.join(tempDir, "JvmProbe.java");
+  await fs.writeFile(markerFile, 'public class JvmProbe { public static void main(String[] a) { System.out.println("OK"); } }', "utf8");
+  
+  const compileResult = await compileJava(markerFile, tempDir);
+  if (!compileResult.success) return 3000; // default estimate
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const proc = spawn(JAVA_PATH, ["JvmProbe"], { cwd: tempDir, timeout: 15000 });
+    let got = "";
+    proc.stdout.on("data", d => { got += d.toString(); });
+    proc.on("close", () => {
+      const elapsed = Date.now() - start;
+      // If probe worked, use measured time; otherwise estimate
+      resolve(got.trim() === "OK" ? elapsed : 3000);
+    });
+    proc.on("error", () => resolve(3000));
+    proc.stdin.end();
+  });
+}
+
+/**
  * Run code against a single test case
  */
-async function runTestCase(language, tempDir, className, testCase, timeLimit) {
+async function runTestCase(language, tempDir, className, testCase, timeLimit, jvmOverhead = 0) {
+  // For Java, give the process extra time to account for JVM cold start
+  const effectiveTimeout = language === "java" ? timeLimit + jvmOverhead + 1000 : timeLimit;
+
   return new Promise((resolve) => {
     const startTime = Date.now();
     let processRef;
@@ -216,20 +266,19 @@ async function runTestCase(language, tempDir, className, testCase, timeLimit) {
     if (language === "python") {
       processRef = spawn(PYTHON_PATH, ["solution.py"], {
         cwd: tempDir,
-        timeout: timeLimit,
+        timeout: effectiveTimeout,
       });
     } else if (language === "java") {
       processRef = spawn(JAVA_PATH, [className], {
         cwd: tempDir,
-        timeout: timeLimit,
+        timeout: effectiveTimeout,
       });
     } else if (language === "c") {
-      // On Windows, the executable is solution.exe; on Unix, it's ./solution
       const isWindows = process.platform === "win32";
       const execName = isWindows ? "solution.exe" : "./solution";
       processRef = spawn(execName, [], {
         cwd: tempDir,
-        timeout: timeLimit,
+        timeout: effectiveTimeout,
         shell: isWindows,
       });
     }
@@ -238,11 +287,11 @@ async function runTestCase(language, tempDir, className, testCase, timeLimit) {
     let stderr = "";
     let killed = false;
 
-    // Set manual timeout as backup
+    // Manual backup timeout
     const timeoutId = setTimeout(() => {
       killed = true;
-      processRef.kill("SIGKILL");
-    }, timeLimit + 500);
+      try { processRef.kill("SIGKILL"); } catch (e) {}
+    }, effectiveTimeout + 500);
 
     // Send input to stdin
     if (testCase.input) {
@@ -250,19 +299,14 @@ async function runTestCase(language, tempDir, className, testCase, timeLimit) {
     }
     processRef.stdin.end();
 
-    // Capture stdout
-    processRef.stdout.on("data", (data) => {
-      stdout += data.toString();
-    });
-
-    // Capture stderr
-    processRef.stderr.on("data", (data) => {
-      stderr += data.toString();
-    });
+    processRef.stdout.on("data", (data) => { stdout += data.toString(); });
+    processRef.stderr.on("data", (data) => { stderr += data.toString(); });
 
     processRef.on("close", (code, signal) => {
       clearTimeout(timeoutId);
-      const executionTime = Date.now() - startTime;
+      const wallTime = Date.now() - startTime;
+      // For Java: subtract JVM startup overhead to get the actual code execution time
+      const codeTime = language === "java" ? Math.max(0, wallTime - jvmOverhead) : wallTime;
 
       // Check if killed due to timeout
       if (killed || signal === "SIGKILL" || signal === "SIGTERM") {
@@ -273,11 +317,20 @@ async function runTestCase(language, tempDir, className, testCase, timeLimit) {
         });
       }
 
-      // Check for runtime error
+      // Even if process exited normally, check if code execution exceeded timeLimit
+      if (codeTime > timeLimit) {
+        return resolve({
+          verdict: "TLE",
+          time: codeTime,
+          message: "Time Limit Exceeded",
+        });
+      }
+
+      // Runtime error
       if (code !== 0) {
         return resolve({
           verdict: "RE",
-          time: executionTime,
+          time: codeTime,
           error: stderr || `Process exited with code ${code}`,
         });
       }
@@ -289,12 +342,12 @@ async function runTestCase(language, tempDir, className, testCase, timeLimit) {
       if (actualOutput === expectedOutput) {
         return resolve({
           verdict: "AC",
-          time: executionTime,
+          time: codeTime,
         });
       } else {
         return resolve({
           verdict: "WA",
-          time: executionTime,
+          time: codeTime,
           expected: testCase.hidden ? "[Hidden]" : expectedOutput,
           actual: testCase.hidden ? "[Hidden]" : actualOutput,
         });

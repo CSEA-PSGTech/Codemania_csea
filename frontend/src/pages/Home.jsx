@@ -353,13 +353,6 @@ export default function HomePage() {
                                     INITIATE_LOGIN <ChevronRight size={18} />
                                 </span>
                             </button>
-
-                            <button
-                                onClick={() => navigate('/admin')}
-                                className="group px-8 py-4 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 font-bold tracking-widest transition-all"
-                            >
-                                ADMIN_ACCESS
-                            </button>
                         </div>
                     </div>
                 </div>
