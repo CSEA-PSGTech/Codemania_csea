@@ -5,7 +5,7 @@ pipeline {
 
     environment {
         REGISTRY = "ghcr.io"
-        GHCR_REPO = 'ghcr.io/csea-psgtech/codemania_csea-backend-core'
+        GHCR_REPO = 'ghcr.io/csea-psgtech/codemania_csea-frontend'
         IMAGE_TAG = 'latest'
         DOCKER_CREDS = credentials('psgdcgit')
     }
