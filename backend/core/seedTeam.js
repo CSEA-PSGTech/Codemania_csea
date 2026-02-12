@@ -7,7 +7,7 @@ const Team = require("./models/Team");
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/codemania";
 
-// Generate 40 teams with varying scores
+// Generate 50 teams with varying scores
 const colleges = [
   "MIT Chennai", "VIT Vellore", "SRM University", "Anna University", 
   "IIT Madras", "NIT Trichy", "PSG Tech", "CEG Chennai",
@@ -31,7 +31,7 @@ const teamSuffixes = [
 
 const testTeams = [];
 
-for (let i = 0; i < 40; i++) {
+for (let i = 0; i < 50; i++) {
   const prefix = teamPrefixes[i % teamPrefixes.length];
   const suffix = teamSuffixes[i % teamSuffixes.length];
   const college = colleges[i % colleges.length];
