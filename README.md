@@ -187,7 +187,7 @@ constraints    : String
 nonOptimizedCode     : String (required) — Python starter code
 nonOptimizedCodeJava : String — Java starter code
 totalPoints    : Number (required) — base point value
-currentPoints  : Number (required) — decays on each solve (-10%, min 50%)
+currentPoints  : Number (required) — decays on each solve (-5%, min 50%)
 noOfTeamsSolved: Number (default: 0)
 timeLimit      : Number (ms, default: 1000)
 memoryLimit    : Number (MB, default: 256)
@@ -195,7 +195,7 @@ maxInputN      : Number
 testcases[]    : { input, output, hidden }
 ```
 
-**Point Decay:** Each time a team solves a question, `currentPoints` drops by 10%, with a floor of 50% of `totalPoints`. First solvers earn the most.
+**Point Decay:** Each time a team solves a question, `currentPoints` drops by 5%, with a floor of 50% of `totalPoints`. First solvers earn the most.
 
 #### Submission
 
@@ -253,7 +253,7 @@ Team submits code
   If AC (first solve):
     ├── Award currentPoints to team
     ├── Increment team.solvedCount
-    ├── Decay question.currentPoints by 10%
+     ├── Decay question.currentPoints by 5%
     ├── Emit Socket.io solve notification
     └── Broadcast updated leaderboard
        │
@@ -534,18 +534,18 @@ node loadtest.js
 
 ## 🔧 Key Technical Decisions
 
-| Decision                         | Rationale                                                                                                |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **JVM Worker Pool**              | Eliminates 3-5s Java cold-start overhead → 1.4-2.5s execution                                            |
-| **Nginx LB over direct calls**   | Docker DNS round-robin distributes load across execution replicas                                        |
-| **`set $target` nginx pattern**  | Open-source nginx doesn't support `resolve` in upstream; variable approach forces DNS lookup per request |
-| **In-memory round toggle**       | Simple and fast; doesn't persist across restarts (intentional for event use)                             |
-| **Shared access code**           | Simplifies auth for 150+ teams at a physical event; no password management                               |
-| **Point decay (10%, floor 50%)** | Rewards fast solvers; prevents late-comers from getting full points                                      |
-| **Stop on first failure**        | Sequential test execution stops on first WA/TLE/RE for fast feedback                                     |
-| **React lazy loading**           | Three.js (600KB+) only loads on Home page, OGL only on pages with matrix background                      |
-| **Manual Vite chunks**           | Separates heavy 3D libraries from core React bundle for faster initial load                              |
-| **Output normalization**         | `True`→`true`, `False`→`false` ensures Python and Java solutions are compared consistently               |
+| Decision                        | Rationale                                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **JVM Worker Pool**             | Eliminates 3-5s Java cold-start overhead → 1.4-2.5s execution                                            |
+| **Nginx LB over direct calls**  | Docker DNS round-robin distributes load across execution replicas                                        |
+| **`set $target` nginx pattern** | Open-source nginx doesn't support `resolve` in upstream; variable approach forces DNS lookup per request |
+| **In-memory round toggle**      | Simple and fast; doesn't persist across restarts (intentional for event use)                             |
+| **Shared access code**          | Simplifies auth for 150+ teams at a physical event; no password management                               |
+| **Point decay (5%, floor 50%)** | Rewards fast solvers; prevents late-comers from getting full points                                      |
+| **Stop on first failure**       | Sequential test execution stops on first WA/TLE/RE for fast feedback                                     |
+| **React lazy loading**          | Three.js (600KB+) only loads on Home page, OGL only on pages with matrix background                      |
+| **Manual Vite chunks**          | Separates heavy 3D libraries from core React bundle for faster initial load                              |
+| **Output normalization**        | `True`→`true`, `False`→`false` ensures Python and Java solutions are compared consistently               |
 
 ---
 

@@ -122,10 +122,10 @@ exports.submitCode = async (req, res) => {
 
         // Update question stats
         question.noOfTeamsSolved += 1;
-        // Decay points (reduce by 10% for each solve, min 50% of total)
+        // Decay points (reduce by 5% for each solve, min 50% of total)
         question.currentPoints = Math.max(
           Math.floor(question.totalPoints * 0.5),
-          Math.floor(question.currentPoints * 0.9)
+          Math.floor(question.currentPoints * 0.95)
         );
         await question.save();
       }
