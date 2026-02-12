@@ -13,48 +13,47 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - EXECUTION_SERVER_URL=http://execution:6001
+      - EXECUTION_SERVER_URL=http://nginx:8080
       - EXECUTION_SECRET=${EXECUTION_SECRET}
     depends_on:
-      - execution
+      - nginx
     restart: unless-stopped
     networks:
       - codemania-network
 
-  # Execution Server
+  # Execution Server — scaled via docker compose up --scale execution=4
   execution:
     build:
       context: ./backend/execution-server
       dockerfile: Dockerfile
-    ports:
-      - "6001:6001"
     environment:
       - PORT=6001
       - EXECUTION_SECRET=${EXECUTION_SECRET}
       - DEFAULT_TIME_LIMIT=2000
       - MAX_CODE_SIZE=50000
+      - MAX_CONCURRENT=3
+      - JVM_POOL_SIZE=2
     restart: unless-stopped
     networks:
       - codemania-network
-    # Resource limits for safety
     deploy:
       resources:
         limits:
           cpus: "2"
           memory: 1G
 
-  # Nginx Load Balancer (optional - uncomment to use)
-  # nginx:
-  #   image: nginx:alpine
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - backend
-  #   restart: unless-stopped
-  #   networks:
-  #     - codemania-network
+  # Nginx — load balances execution servers
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - execution
+    restart: unless-stopped
+    networks:
+      - codemania-network
 
 networks:
   codemania-network:

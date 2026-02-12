@@ -377,14 +377,14 @@ export default function HomePage() {
                                 <TimelineItem
                                     phase="PHASE_01"
                                     title="Code Optimization Round"
-                                    desc="Form your duos.Duos compete to optimize given code for performance and efficiency. The top 8 teams advance to the final phase."
+                                    desc="Form your duos. Duos compete to optimize given code for performance and efficiency."
                                     isActive={true}
                                 />
 
                                 <TimelineItem
                                     phase="PHASE_02"
                                     title="Final Problem Solving Round"
-                                    desc="The qualified teams battle it out by solving challenging algorithmic questions to claim victory."
+                                    desc="Qualified teams bid for questions using their earned points. Win the bid, solve the problem, and score big to claim victory."
                                     isActive={false}
                                 />
                             </div>

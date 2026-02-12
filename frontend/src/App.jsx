@@ -80,7 +80,7 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
+    <Router basename="/codemania">
       <AppContent />
     </Router>
   );

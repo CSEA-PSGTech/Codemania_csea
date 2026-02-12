@@ -114,14 +114,6 @@ const ChallengeCard = ({ question, onStart }) => {
 
             {/* Card Body */}
             <div className="p-6 flex-1 relative z-10 flex flex-col">
-                <div className="flex items-center gap-2 text-cyan-200/50 text-xs uppercase tracking-widest mb-3">
-                    <Code size={12} />
-                    {question.category}
-                </div>
-
-                <p className="text-cyan-100/70 text-sm leading-relaxed mb-6 flex-1 font-mono">
-                    {question.description}
-                </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-cyan-900/30">
                     <div className="flex items-center gap-2 text-cyan-500/80 text-sm font-mono">
