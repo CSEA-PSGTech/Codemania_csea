@@ -19,20 +19,23 @@ exports.createQuestion = async (req, res) => {
   try {
     const {
       title,
-      descriptionWithConstraints,
+      tag,
+      description,
+      constraints,
       nonOptimizedCode,
       nonOptimizedCodeJava,
       totalPoints,
       testcases,
       timeLimit,
       memoryLimit,
-      maxInputN,
-      complexityNote
+      maxInputN
     } = req.body;
 
     const question = new Question({
       title,
-      descriptionWithConstraints,
+      tag,
+      description,
+      constraints,
       nonOptimizedCode,
       nonOptimizedCodeJava,
       totalPoints,
@@ -40,8 +43,7 @@ exports.createQuestion = async (req, res) => {
       testcases,
       timeLimit,
       memoryLimit,
-      maxInputN,
-      complexityNote
+      maxInputN
     });
 
     await question.save();
@@ -61,7 +63,9 @@ exports.updateQuestion = async (req, res) => {
   try {
     const {
       title,
-      descriptionWithConstraints,
+      tag,
+      description,
+      constraints,
       nonOptimizedCode,
       nonOptimizedCodeJava,
       totalPoints,
@@ -69,15 +73,16 @@ exports.updateQuestion = async (req, res) => {
       testcases,
       timeLimit,
       memoryLimit,
-      maxInputN,
-      complexityNote
+      maxInputN
     } = req.body;
 
     const question = await Question.findByIdAndUpdate(
       req.params.id,
       {
         title,
-        descriptionWithConstraints,
+        tag,
+        description,
+        constraints,
         nonOptimizedCode,
         nonOptimizedCodeJava,
         totalPoints,
@@ -85,8 +90,7 @@ exports.updateQuestion = async (req, res) => {
         testcases,
         timeLimit,
         memoryLimit,
-        maxInputN,
-        complexityNote
+        maxInputN
       },
       { new: true }
     );

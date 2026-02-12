@@ -9,39 +9,37 @@ const TEAM_ACCESS_CODE = process.env.TEAM_ACCESS_CODE || "CODEMANIA2026";
 // @desc    Register a new team
 exports.register = async (req, res) => {
   try {
-    const { teamName, participant1Roll, collegeName, email, yearOfStudy } = req.body;
+    const { teamName, collegeName, user1Name, user2Name, user1Mobile, user2Mobile } = req.body;
 
     // Input validation
-    if (!teamName || !participant1Roll || !collegeName || !email || !yearOfStudy) {
+    if (!teamName || !collegeName || !user1Name || !user2Name || !user1Mobile || !user2Mobile) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+    // Mobile number validation (10 digits)
+    const mobileRegex = /^[0-9]{10}$/;
+    if (!mobileRegex.test(user1Mobile)) {
+      return res.status(400).json({ message: "Invalid mobile number for User 1 (must be 10 digits)" });
+    }
+    if (!mobileRegex.test(user2Mobile)) {
+      return res.status(400).json({ message: "Invalid mobile number for User 2 (must be 10 digits)" });
     }
 
     // Check if team already exists
-    const existingTeam = await Team.findOne({
-      $or: [{ teamName }, { email: email.toLowerCase() }]
-    });
+    const existingTeam = await Team.findOne({ teamName });
 
     if (existingTeam) {
-      return res.status(400).json({
-        message: existingTeam.teamName === teamName
-          ? "Team name already taken"
-          : "Email already registered"
-      });
+      return res.status(400).json({ message: "Team name already taken" });
     }
 
     // Create team (no password needed - they use common access code)
     const team = new Team({
       teamName: teamName.trim(),
-      participant1Roll: participant1Roll.trim(),
       collegeName: collegeName.trim(),
-      email: email.toLowerCase().trim(),
-      yearOfStudy
+      user1Name: user1Name.trim(),
+      user2Name: user2Name.trim(),
+      user1Mobile: user1Mobile.trim(),
+      user2Mobile: user2Mobile.trim()
     });
 
     await team.save();
@@ -55,7 +53,7 @@ exports.register = async (req, res) => {
       team: {
         id: team._id,
         teamName: team.teamName,
-        email: team.email
+        collegeName: team.collegeName
       }
     });
   } catch (error) {
@@ -97,7 +95,7 @@ exports.login = async (req, res) => {
       team: {
         id: team._id,
         teamName: team.teamName,
-        email: team.email,
+        collegeName: team.collegeName,
         round1Status: team.round1.status
       }
     });

@@ -12,7 +12,9 @@ const TestCaseSchema = new mongoose.Schema(
 const QuestionSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    descriptionWithConstraints: { type: String, required: true },
+    tag: { type: String, enum: ['Easy', 'Medium', 'Hard'], default: 'Medium' },
+    description: { type: String, required: true },
+    constraints: { type: String, default: '' },
     nonOptimizedCode: { type: String, required: true },
     nonOptimizedCodeJava: { type: String, default: '' },
 
@@ -23,7 +25,6 @@ const QuestionSchema = new mongoose.Schema(
     timeLimit: { type: Number, default: 1000 }, // ms
     memoryLimit: { type: Number, default: 256 }, // MB
     maxInputN: { type: Number, default: null },
-    complexityNote: { type: String, default: "" },
 
     testcases: [TestCaseSchema]
   },

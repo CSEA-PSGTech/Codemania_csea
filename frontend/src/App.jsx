@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import TargetCursor from "./components/TargetCursor.jsx";
 import FaultyTerminal from "./components/FaultyTerminal.jsx";
 import "./styles/App.css";
@@ -18,6 +18,12 @@ const PageLoader = () => (
     Loading...
   </div>
 );
+
+// Route guard — redirects to /admin login if no admin token
+const ProtectedAdminRoute = ({ children }) => {
+  const adminToken = localStorage.getItem("adminToken");
+  return adminToken ? children : <Navigate to="/admin" replace />;
+};
 
 // Inner component that uses useLocation (must be inside Router)
 function AppContent() {
@@ -62,7 +68,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminLogin />} />
 
           {/* Protected Routes (Mocked for now) */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
           <Route path="/challenges" element={<ChallengeDashboard />} />
           <Route path="/ide/:problemId" element={<IdeInterface />} />
         </Routes>

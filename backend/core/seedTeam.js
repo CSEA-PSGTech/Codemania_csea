@@ -63,10 +63,11 @@ for (let i = 0; i < 40; i++) {
 
   testTeams.push({
     teamName: `${prefix}${suffix}`,
-    participant1Roll: `22CS${String(100 + i).padStart(3, '0')}`,
     collegeName: college,
-    email: `team${i + 1}@example.com`,
-    yearOfStudy: 2 + (i % 3),
+    user1Name: `Player${i * 2 + 1}`,
+    user2Name: `Player${i * 2 + 2}`,
+    user1Mobile: `90000${String(10000 + i).padStart(5, '0')}`,
+    user2Mobile: `90001${String(10000 + i).padStart(5, '0')}`,
     solvedCount,
     totalPoints,
     totalSubmissions

@@ -281,7 +281,9 @@ class JvmPool {
 function normalizeOutput(output) {
   if (!output) return "";
   return output.toString().trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n")
-    .split("\n").map((l) => l.trim()).join("\n");
+    .split("\n").map((l) => l.trim())
+    .map((l) => l.replace(/\bTrue\b/g, "true").replace(/\bFalse\b/g, "false"))
+    .join("\n");
 }
 
 // Singleton

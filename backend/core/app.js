@@ -50,6 +50,25 @@ app.use("/api/submissions", submissionRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/admin", adminRoutes);
 
+// ==================== ROUND STATUS (in-memory toggle) ====================
+let round1Active = false;
+
+app.get("/api/round-status", (req, res) => {
+  res.json({ round1Active });
+});
+
+// Admin-only toggle
+const { verifyAdmin } = require("./middleware/admin");
+app.post("/api/admin/round-status", verifyAdmin, (req, res) => {
+  const { active } = req.body;
+  round1Active = !!active;
+  console.log(`🔔 Round 1 ${round1Active ? "ACTIVATED" : "DEACTIVATED"} by admin`);
+  // Notify all connected clients via Socket.io
+  const io = app.get("io");
+  if (io) io.emit("round-status", { round1Active });
+  res.json({ round1Active });
+});
+
 app.get("/", (req, res) => {
   res.json({ message: "🚀 CodeMania API is running!" });
 });

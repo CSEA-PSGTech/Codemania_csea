@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Terminal, Play, Cpu, ChevronLeft, ChevronDown,
@@ -111,6 +111,39 @@ export default function IdeInterface() {
     const [copied, setCopied] = useState(false);
     const [serverOnline, setServerOnline] = useState(null); // null = checking, true = online, false = offline
     const [isSolved, setIsSolved] = useState(false); // Track if question is already solved
+    const [splitPercent, setSplitPercent] = useState(50); // left panel width %
+    const isDragging = useRef(false);
+    const containerRef = useRef(null);
+
+    // --- Drag-to-resize handlers ---
+    const onMouseDown = useCallback((e) => {
+        e.preventDefault();
+        isDragging.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+        const onMouseMove = (e) => {
+            if (!isDragging.current || !containerRef.current) return;
+            const rect = containerRef.current.getBoundingClientRect();
+            const pct = ((e.clientX - rect.left) / rect.width) * 100;
+            setSplitPercent(Math.min(80, Math.max(20, pct)));
+        };
+        const onMouseUp = () => {
+            if (isDragging.current) {
+                isDragging.current = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, []);
 
     // Check server health on mount
     useEffect(() => {
@@ -161,12 +194,13 @@ export default function IdeInterface() {
                 const timeLimitMs = data.timeLimit || 1000;
                 const constraints = [];
 
-                if (data.maxInputN) {
-                    constraints.push(`N <= ${data.maxInputN}`);
+                if (data.constraints) {
+                    // Split constraints by newline for display as list items
+                    data.constraints.split('\n').filter(c => c.trim()).forEach(c => constraints.push(c.trim()));
                 }
 
-                if (data.complexityNote) {
-                    constraints.push(data.complexityNote);
+                if (data.maxInputN) {
+                    constraints.push(`N <= ${data.maxInputN}`);
                 }
 
                 constraints.push(`Time limit: ${Math.ceil(timeLimitMs / 1000)}s (~1e8 ops)`);
@@ -174,13 +208,13 @@ export default function IdeInterface() {
                 const mappedProblem = {
                     id: data._id,
                     title: data.title,
-                    description: data.descriptionWithConstraints,
+                    description: data.description,
                     nonOptimizedCode: data.nonOptimizedCode,
                     nonOptimizedCodeJava: data.nonOptimizedCodeJava,
                     points: data.currentPoints,
                     totalPoints: data.totalPoints,
                     teamsSolved: data.noOfTeamsSolved,
-                    difficulty: data.totalPoints <= 100 ? 'Easy' : data.totalPoints <= 200 ? 'Medium' : 'Hard',
+                    difficulty: data.tag || 'Medium',
                     category: 'Code Optimization',
                     timeLimitMs,
                     timeLimit: `${Math.ceil(timeLimitMs / 1000)}s`,
@@ -515,10 +549,10 @@ export default function IdeInterface() {
             </header>
 
             {/* --- MAIN WORKSPACE --- */}
-            <div className="flex-1 flex overflow-hidden relative z-10 grid-bg">
+            <div ref={containerRef} className="flex-1 flex overflow-hidden relative z-10 grid-bg">
 
                 {/* --- LEFT PANEL: PROBLEM DESCRIPTION --- */}
-                <div className="w-1/2 flex flex-col border-r border-cyan-900/30 bg-black/80 backdrop-blur-sm">
+                <div style={{ width: `${splitPercent}%` }} className="flex flex-col border-r border-cyan-900/30 bg-black/80 backdrop-blur-sm">
                     {/* Tabs */}
                     <div className="h-11 border-b border-cyan-900/30 flex items-end bg-black/50 px-2 gap-1">
                         <TabButton
@@ -670,8 +704,18 @@ export default function IdeInterface() {
                     </div>
                 </div>
 
+                {/* --- DRAG HANDLE --- */}
+                <div
+                    onMouseDown={onMouseDown}
+                    className="w-1.5 cursor-col-resize bg-cyan-900/20 hover:bg-cyan-500/40 active:bg-cyan-500/60 transition-colors flex-shrink-0 relative group z-20"
+                    title="Drag to resize"
+                >
+                    <div className="absolute inset-y-0 -left-1 -right-1" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-cyan-600/60 rounded-full group-hover:bg-cyan-400 transition-colors" />
+                </div>
+
                 {/* --- RIGHT PANEL: EDITOR & CONSOLE --- */}
-                <div className="w-1/2 flex flex-col bg-black/90">
+                <div style={{ width: `${100 - splitPercent}%` }} className="flex flex-col bg-black/90">
 
                     {/* Editor Toolbar */}
                     <div className="h-11 border-b border-cyan-900/30 flex items-center justify-between px-4 bg-black/50">

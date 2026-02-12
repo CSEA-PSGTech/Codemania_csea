@@ -173,6 +173,7 @@ export default function ChallengeDashboard() {
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [currentTeam, setCurrentTeam] = useState(null);
     const [myRank, setMyRank] = useState(null);
+    const [roundActive, setRoundActive] = useState(null);
     const navigate = useNavigate();
 
     // Fetch questions and solved status from API
@@ -186,6 +187,15 @@ export default function ChallengeDashboard() {
                 }
 
                 const headers = { Authorization: `Bearer ${token}` };
+
+                // Check round status first
+                const roundRes = await API.get('/round-status');
+                if (!roundRes.data?.round1Active) {
+                    setRoundActive(false);
+                    setLoading(false);
+                    return;
+                }
+                setRoundActive(true);
 
                 // Fetch questions, solved status, and current team in parallel
                 const [questionsRes, solvedRes, meRes] = await Promise.all([
@@ -202,12 +212,12 @@ export default function ChallengeDashboard() {
                 const mappedQuestions = questionsRes.data.map(q => ({
                     id: q._id,
                     title: q.title,
-                    description: q.descriptionWithConstraints,
+                    description: q.description,
                     points: q.currentPoints,
                     totalPoints: q.totalPoints,
                     teamsSolved: q.noOfTeamsSolved,
-                    difficulty: q.totalPoints <= 100 ? 'Easy' : q.totalPoints <= 200 ? 'Medium' : 'Hard',
-                    category: 'Code Optimization',
+                    difficulty: q.tag || 'Medium',
+                    category: q.tag || 'Code Optimization',
                     timeLimit: q.timeLimit || 1000,
                     solved: solved.includes(q._id)
                 }));
@@ -506,6 +516,22 @@ export default function ChallengeDashboard() {
             `}</style>
 
             {/* MAIN CONTENT */}
+            {roundActive === false ? (
+                <div className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] px-6">
+                    <div className="border border-red-500/30 bg-red-900/10 p-12 max-w-lg text-center">
+                        <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-3">
+                            ROUND 1 NOT ACTIVE
+                        </h2>
+                        <p className="text-cyan-200/60 text-sm leading-relaxed mb-6">
+                            The admin has not opened the portal yet. Please wait for instructions from the organizers.
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-red-400 text-xs uppercase tracking-widest">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            Standing by...
+                        </div>
+                    </div>
+                </div>
+            ) : (
             <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
 
                 {/* Intro Section */}
@@ -599,6 +625,7 @@ export default function ChallengeDashboard() {
                 </div>
 
             </main>
+            )}
 
             {/* Animation Styles Inline */}
             <style>{`

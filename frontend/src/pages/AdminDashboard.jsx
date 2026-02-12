@@ -22,6 +22,10 @@ export default function AdminDashboard() {
     const [submissions, setSubmissions] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
 
+    // Round status
+    const [roundActive, setRoundActive] = useState(false);
+    const [roundToggling, setRoundToggling] = useState(false);
+
     // Loading/Glitch State
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -34,7 +38,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         const token = getAdminToken();
         if (!token) {
-            navigate('/admin/login');
+            navigate('/admin');
             return;
         }
 
@@ -44,13 +48,16 @@ export default function AdminDashboard() {
                 const headers = { Authorization: `Bearer ${token}` };
 
                 // Fetch all data in parallel
-                const [questionsRes, teamsRes, submissionsRes, statsRes, leaderboardRes] = await Promise.all([
+                const [questionsRes, teamsRes, submissionsRes, statsRes, leaderboardRes, roundRes] = await Promise.all([
                     apiClient.get('/admin/questions', { headers }),
                     apiClient.get('/admin/teams', { headers }),
                     apiClient.get('/admin/submissions', { headers }),
                     apiClient.get('/admin/stats', { headers }).catch(() => ({ data: null })),
-                    apiClient.get('/leaderboard').catch(() => ({ data: [] }))
+                    apiClient.get('/leaderboard').catch(() => ({ data: [] })),
+                    apiClient.get('/round-status').catch(() => ({ data: { round1Active: false } }))
                 ]);
+
+                setRoundActive(roundRes.data?.round1Active || false);
 
                 setQuestions(questionsRes.data || []);
                 setTeams(teamsRes.data || []);
@@ -79,7 +86,7 @@ export default function AdminDashboard() {
                 console.error('Error fetching admin data:', err);
                 if (err.response?.status === 401 || err.response?.status === 403) {
                     localStorage.removeItem('adminToken');
-                    navigate('/admin/login');
+                    navigate('/admin');
                 } else {
                     setError('Failed to load data. Please try again.');
                 }
@@ -220,6 +227,25 @@ export default function AdminDashboard() {
                     </h1>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={async () => {
+                            setRoundToggling(true);
+                            try {
+                                const headers = { Authorization: `Bearer ${getAdminToken()}` };
+                                const res = await apiClient.post('/admin/round-status', { active: !roundActive }, { headers });
+                                setRoundActive(res.data.round1Active);
+                            } catch (e) { console.error(e); }
+                            finally { setRoundToggling(false); }
+                        }}
+                        disabled={roundToggling}
+                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all ${
+                            roundActive
+                                ? 'bg-green-500/20 border-green-500 text-green-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-400'
+                                : 'bg-red-500/20 border-red-500 text-red-400 hover:bg-green-500/20 hover:border-green-500 hover:text-green-400'
+                        }`}
+                    >
+                        {roundToggling ? 'TOGGLING...' : roundActive ? '🟢 ROUND 1 ACTIVE — CLICK TO DEACTIVATE' : '🔴 ROUND 1 INACTIVE — CLICK TO ACTIVATE'}
+                    </button>
                     <div className="text-xs text-cyan-700 animate-pulse">SYSTEM STATUS: ONLINE</div>
                     <button
                         onClick={handleLogout}
@@ -347,8 +373,9 @@ const QuestionManager = ({ questions, onCreate, onDelete, onUpdate }) => {
                                 <span className="text-xs text-cyan-600 border border-cyan-900 px-1">ID: {q._id}</span>
                                 <h3 className="text-xl text-white font-bold">{q.title}</h3>
                             </div>
-                            <p className="text-cyan-400/60 text-sm mt-1 truncate max-w-2xl">{q.descriptionWithConstraints}</p>
+                            <p className="text-cyan-400/60 text-sm mt-1 truncate max-w-2xl">{q.description}</p>
                             <div className="flex gap-4 mt-2 text-xs text-cyan-500 font-mono">
+                                {q.tag && <span className="text-emerald-400 border border-emerald-800 px-1">{q.tag}</span>}
                                 <span>PTS: {q.totalPoints}</span>
                                 <span>CUR: {q.currentPoints}</span>
                                 <span>TL: {Math.ceil((q.timeLimit || 1000) / 1000)}s</span>
@@ -387,14 +414,15 @@ const QuestionManager = ({ questions, onCreate, onDelete, onUpdate }) => {
 const CreateQuestionForm = ({ onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         title: '',
-        descriptionWithConstraints: '',
+        tag: 'Medium',
+        description: '',
+        constraints: '',
         nonOptimizedCode: '',
         nonOptimizedCodeJava: '',
         totalPoints: 100,
         timeLimit: 1000,
         memoryLimit: 256,
-        maxInputN: '',
-        complexityNote: ''
+        maxInputN: ''
     });
     
     const [testcases, setTestcases] = useState([
@@ -504,23 +532,36 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-cyan-400 uppercase">Complexity Note</label>
-                            <input
+                            <label className="text-xs text-cyan-400 uppercase">Difficulty</label>
+                            <select
                                 className="w-full bg-black border border-cyan-900 p-2 text-white focus:border-cyan-400 focus:outline-none font-mono text-xs"
-                                placeholder="Ex: Target O(n log n); 1s ~ 1e8 ops"
-                                value={formData.complexityNote}
-                                onChange={e => setFormData({ ...formData, complexityNote: e.target.value })}
-                            />
+                                value={formData.tag}
+                                onChange={e => setFormData({ ...formData, tag: e.target.value })}
+                            >
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-cyan-400 uppercase">Description & Constraints</label>
+                            <label className="text-xs text-cyan-400 uppercase">Description</label>
                             <textarea
                                 required
                                 className="w-full h-24 bg-black border border-cyan-900 p-2 text-white focus:border-cyan-400 focus:outline-none font-mono text-sm"
                                 placeholder="Detailed problem statement..."
-                                value={formData.descriptionWithConstraints}
-                                onChange={e => setFormData({ ...formData, descriptionWithConstraints: e.target.value })}
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs text-cyan-400 uppercase">Constraints</label>
+                            <textarea
+                                className="w-full h-16 bg-black border border-cyan-900 p-2 text-white focus:border-cyan-400 focus:outline-none font-mono text-xs"
+                                placeholder="Ex: 1 <= n <= 10^5, 1 <= arr[i] <= 10^9"
+                                value={formData.constraints}
+                                onChange={e => setFormData({ ...formData, constraints: e.target.value })}
                             />
                         </div>
 
@@ -630,14 +671,15 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
 const EditQuestionForm = ({ question, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         title: question.title || '',
-        descriptionWithConstraints: question.descriptionWithConstraints || '',
+        tag: question.tag || 'Medium',
+        description: question.description || '',
+        constraints: question.constraints || '',
         nonOptimizedCode: question.nonOptimizedCode || '',
         nonOptimizedCodeJava: question.nonOptimizedCodeJava || '',
         totalPoints: question.totalPoints || 100,
         timeLimit: question.timeLimit || 1000,
         memoryLimit: question.memoryLimit || 256,
-        maxInputN: question.maxInputN ?? '',
-        complexityNote: question.complexityNote || ''
+        maxInputN: question.maxInputN ?? ''
     });
     
     const [testcases, setTestcases] = useState(
@@ -749,23 +791,36 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-yellow-400 uppercase">Complexity Note</label>
-                            <input
+                            <label className="text-xs text-yellow-400 uppercase">Difficulty</label>
+                            <select
                                 className="w-full bg-black border border-yellow-900 p-2 text-white focus:border-yellow-400 focus:outline-none font-mono text-xs"
-                                placeholder="Ex: Target O(n log n); 1s ~ 1e8 ops"
-                                value={formData.complexityNote}
-                                onChange={e => setFormData({ ...formData, complexityNote: e.target.value })}
-                            />
+                                value={formData.tag}
+                                onChange={e => setFormData({ ...formData, tag: e.target.value })}
+                            >
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs text-yellow-400 uppercase">Description & Constraints</label>
+                            <label className="text-xs text-yellow-400 uppercase">Description</label>
                             <textarea
                                 required
                                 className="w-full h-24 bg-black border border-yellow-900 p-2 text-white focus:border-yellow-400 focus:outline-none font-mono text-sm"
                                 placeholder="Detailed problem statement..."
-                                value={formData.descriptionWithConstraints}
-                                onChange={e => setFormData({ ...formData, descriptionWithConstraints: e.target.value })}
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs text-yellow-400 uppercase">Constraints</label>
+                            <textarea
+                                className="w-full h-16 bg-black border border-yellow-900 p-2 text-white focus:border-yellow-400 focus:outline-none font-mono text-xs"
+                                placeholder="Ex: 1 <= n <= 10^5, 1 <= arr[i] <= 10^9"
+                                value={formData.constraints}
+                                onChange={e => setFormData({ ...formData, constraints: e.target.value })}
                             />
                         </div>
 
@@ -880,7 +935,9 @@ const TeamManager = ({ teams, onReset, onDelete }) => (
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-cyan-900/20 text-cyan-400 text-xs uppercase tracking-wider">
-                        <th className="p-4 border-b border-cyan-900">Entity Name</th>
+                        <th className="p-4 border-b border-cyan-900">Team Name</th>
+                        <th className="p-4 border-b border-cyan-900">College</th>
+                        <th className="p-4 border-b border-cyan-900">Members</th>
                         <th className="p-4 border-b border-cyan-900 text-center">Solved</th>
                         <th className="p-4 border-b border-cyan-900 text-center">Score</th>
                         <th className="p-4 border-b border-cyan-900">Round 1 Status</th>
@@ -891,6 +948,11 @@ const TeamManager = ({ teams, onReset, onDelete }) => (
                     {teams.map(team => (
                         <tr key={team._id} className="hover:bg-cyan-900/10 transition-colors group">
                             <td className="p-4 font-bold text-white font-mono">{team.teamName}</td>
+                            <td className="p-4 text-cyan-300/60 text-xs">{team.collegeName || '-'}</td>
+                            <td className="p-4 text-xs">
+                                <div className="text-white">{team.user1Name || '-'}</div>
+                                <div className="text-cyan-400/60">{team.user2Name || '-'}</div>
+                            </td>
                             <td className="p-4 text-center font-mono">{team.solvedCount}</td>
                             <td className="p-4 text-center text-white">{team.totalPoints}</td>
                             <td className="p-4">

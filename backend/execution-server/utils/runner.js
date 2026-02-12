@@ -377,6 +377,7 @@ function normalizeOutput(output) {
     .replace(/\r/g, "\n")
     .split("\n")
     .map((line) => line.trim())
+    .map((line) => line.replace(/\bTrue\b/g, "true").replace(/\bFalse\b/g, "false"))
     .join("\n");
 }
 

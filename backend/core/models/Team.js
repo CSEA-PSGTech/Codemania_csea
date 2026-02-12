@@ -3,10 +3,11 @@ const mongoose = require("mongoose");
 const TeamSchema = new mongoose.Schema(
   {
     teamName: { type: String, required: true, unique: true },
-    participant1Roll: { type: String, required: true },
     collegeName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    yearOfStudy: { type: Number, required: true },
+    user1Name: { type: String, required: true },
+    user2Name: { type: String, required: true },
+    user1Mobile: { type: String, required: true },
+    user2Mobile: { type: String, required: true },
     solvedCount: { type: Number, default: 0 },
 
     round1: {
