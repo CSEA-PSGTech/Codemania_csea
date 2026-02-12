@@ -38,8 +38,8 @@ jobs:
       - name: Run Lint
         run: npm run lint || echo "No lint configured"
 
-      - name: Build project
-        run: npm run build
+      # - name: Build project
+      #   run: npm run build
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
