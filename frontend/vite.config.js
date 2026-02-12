@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: '/codemania/',
   plugins: [react(), tailwindcss()],
+  server: {
+    allowedHosts: ['csea.psgtech.ac.in']
+  },
   build: {
     rollupOptions: {
       output: {
