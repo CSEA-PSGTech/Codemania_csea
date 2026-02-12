@@ -25,6 +25,13 @@ pipeline {
             }
         }
 
+        stage("Stop The Exitsing Conatiner"){
+            steps {
+                sh "docker container stop ${GHCR_REPO}:${IMAGE_TAG}"
+                sh "docker conatiner rm ${GHCR_REPO}:${IMAGE_TAG}"
+            }
+        }
+
 
         stage('Run Container') {
             steps {
