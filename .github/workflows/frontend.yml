@@ -58,6 +58,9 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            VITE_CORE_BACKEND_URL=${{ secrets.VITE_CORE_BACKEND_URL }}
+            VITE_EXECUTION_SERVER_URL=${{ secrets.VITE_EXECUTION_SERVER_URL }}
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:0.1-${{ github.sha }}

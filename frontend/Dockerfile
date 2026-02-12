@@ -10,8 +10,13 @@ RUN npm install
 COPY . .
 
 # Define build arguments for environment variables
+ARG VITE_CORE_BACKEND_URL
+ARG VITE_EXECUTION_SERVER_URL
 
-# Set environment variables from build args
+# Set environment variables from build args for Vite build
+ENV VITE_CORE_BACKEND_URL=${VITE_CORE_BACKEND_URL}
+ENV VITE_EXECUTION_SERVER_URL=${VITE_EXECUTION_SERVER_URL}
+
 RUN npm run build
 
 EXPOSE 5173

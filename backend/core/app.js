@@ -19,8 +19,9 @@ const app = express();
 // Create HTTP server for Socket.io
 const server = http.createServer(app);
 
-// Initialize Socket.io
+// Initialize Socket.io with base path
 const io = new Server(server, {
+  path: "/codemania",
   cors: {
     origin: "*", // In production, set your frontend URL
     methods: ["GET", "POST"]
@@ -44,22 +45,22 @@ const submissionRoutes = require("./routes/submissions");
 const leaderboardRoutes = require("./routes/leaderboard");
 const adminRoutes = require("./routes/admin");
 
-app.use("/api/auth", authRoutes);
-app.use("/api/questions", questionRoutes);
-app.use("/api/submissions", submissionRoutes);
-app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/codemania/api/auth", authRoutes);
+app.use("/codemania/api/questions", questionRoutes);
+app.use("/codemania/api/submissions", submissionRoutes);
+app.use("/codemania/api/leaderboard", leaderboardRoutes);
+app.use("/codemania/api/admin", adminRoutes);
 
 // ==================== ROUND STATUS (in-memory toggle) ====================
 let round1Active = false;
 
-app.get("/api/round-status", (req, res) => {
+app.get("/codemania/api/round-status", (req, res) => {
   res.json({ round1Active });
 });
 
 // Admin-only toggle
 const { verifyAdmin } = require("./middleware/admin");
-app.post("/api/admin/round-status", verifyAdmin, (req, res) => {
+app.post("/codemania/api/admin/round-status", verifyAdmin, (req, res) => {
   const { active } = req.body;
   round1Active = !!active;
   console.log(`🔔 Round 1 ${round1Active ? "ACTIVATED" : "DEACTIVATED"} by admin`);
@@ -71,6 +72,10 @@ app.post("/api/admin/round-status", verifyAdmin, (req, res) => {
 
 app.get("/", (req, res) => {
   res.json({ message: "🚀 CodeMania API is running!" });
+});
+
+app.get("/codemania", (req, res) => {
+  res.json({ message: "🚀 CodeMania API is running! with /codemania" });
 });
 
 // ==================== SOCKET.IO ====================
