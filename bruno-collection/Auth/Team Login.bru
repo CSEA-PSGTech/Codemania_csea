@@ -1,0 +1,24 @@
+meta {
+  name: Team Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "teamName": "Test Team Alpha",
+    "accessCode": "CODEMANIA2026"
+  }
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.token) {
+    bru.setEnvVar("token", res.body.token);
+  }
+}

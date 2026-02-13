@@ -1,0 +1,28 @@
+meta {
+  name: Team Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://backendinfinitum.psgtech.ac.in/codemania/api/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "teamName": "Test Team Alpha",
+    "collegeName": "CSEA College",
+    "user1Name": "John Doe",
+    "user2Name": "Jane Smith",
+    "user1Mobile": "9876543210",
+    "user2Mobile": "9876543211"
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.token) {
+    bru.setEnvVar("token", res.body.token);
+  }
+}
