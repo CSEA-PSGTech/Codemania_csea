@@ -17,7 +17,7 @@ services:
     networks:
       - codemania-network
 
-  # ── Main Backend (Express + MongoDB + Socket.io) ──────────────────
+  # ── Main Backend (Express + MongoDB) ──────────────────
   backend:
     build:
       context: ./backend/core

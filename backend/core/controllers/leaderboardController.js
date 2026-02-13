@@ -73,18 +73,4 @@ exports.getTopTeams = async (req, res) => {
   }
 };
 
-// @desc    Get leaderboard data (for socket emission)
-exports.getLeaderboardData = async () => {
-  const teams = await Team.find()
-    .select("teamName collegeName solvedCount totalPoints totalSubmissions")
-    .sort({ totalPoints: -1, solvedCount: -1 });
 
-  return teams.map((team, index) => ({
-    rank: index + 1,
-    teamName: team.teamName,
-    collegeName: team.collegeName,
-    solvedCount: team.solvedCount,
-    totalPoints: team.totalPoints,
-    totalSubmissions: team.totalSubmissions
-  }));
-};

@@ -238,11 +238,10 @@ export default function AdminDashboard() {
                             finally { setRoundToggling(false); }
                         }}
                         disabled={roundToggling}
-                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all ${
-                            roundActive
+                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all ${roundActive
                                 ? 'bg-green-500/20 border-green-500 text-green-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-400'
                                 : 'bg-red-500/20 border-red-500 text-red-400 hover:bg-green-500/20 hover:border-green-500 hover:text-green-400'
-                        }`}
+                            }`}
                     >
                         {roundToggling ? 'TOGGLING...' : roundActive ? '🟢 ROUND 1 ACTIVE — CLICK TO DEACTIVATE' : '🔴 ROUND 1 INACTIVE — CLICK TO ACTIVATE'}
                     </button>
@@ -358,10 +357,10 @@ const QuestionManager = ({ questions, onCreate, onDelete, onUpdate }) => {
             )}
 
             {editingQuestion && (
-                <EditQuestionForm 
-                    question={editingQuestion} 
-                    onClose={() => setEditingQuestion(null)} 
-                    onSubmit={handleUpdate} 
+                <EditQuestionForm
+                    question={editingQuestion}
+                    onClose={() => setEditingQuestion(null)}
+                    onSubmit={handleUpdate}
                 />
             )}
 
@@ -389,15 +388,15 @@ const QuestionManager = ({ questions, onCreate, onDelete, onUpdate }) => {
                             </div>
                         </div>
                         <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button 
-                                onClick={() => handleEdit(q)} 
+                            <button
+                                onClick={() => handleEdit(q)}
                                 className="p-2 hover:text-white hover:bg-cyan-600/20 rounded text-cyan-400"
                                 title="Edit Question"
                             >
                                 <Edit size={18} />
                             </button>
-                            <button 
-                                onClick={() => onDelete(q._id)} 
+                            <button
+                                onClick={() => onDelete(q._id)}
                                 className="p-2 hover:text-white hover:bg-red-600/20 rounded text-red-400"
                                 title="Delete Question"
                             >
@@ -424,7 +423,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
         memoryLimit: 256,
         maxInputN: ''
     });
-    
+
     const [testcases, setTestcases] = useState([
         { input: '', output: '', hidden: false }
     ]);
@@ -652,7 +651,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             <p className="text-[10px] text-cyan-600/60 italic">
                                 Sample test cases are shown to users. Hidden test cases are for time limit testing (larger inputs).
                             </p>
@@ -681,10 +680,10 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
         memoryLimit: question.memoryLimit || 256,
         maxInputN: question.maxInputN ?? ''
     });
-    
+
     const [testcases, setTestcases] = useState(
-        question.testcases?.length > 0 
-            ? question.testcases.map(tc => ({ ...tc })) 
+        question.testcases?.length > 0
+            ? question.testcases.map(tc => ({ ...tc }))
             : [{ input: '', output: '', hidden: false }]
     );
 
@@ -911,7 +910,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             <p className="text-[10px] text-yellow-600/60 italic">
                                 Sample test cases are shown to users. Hidden test cases are for time limit testing (larger inputs).
                             </p>
@@ -1011,71 +1010,129 @@ const SubmissionLog = ({ submissions }) => (
     </div>
 );
 
-const LeaderboardPanel = ({ leaderboard }) => (
-    <div className="space-y-6">
-        <div className="flex justify-between items-center border-b border-cyan-900 pb-4">
-            <h2 className="text-2xl text-white tracking-widest uppercase flex items-center gap-3">
-                <Trophy className="text-yellow-500" size={24} />
-                Live Leaderboard
-            </h2>
-            <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 animate-pulse rounded-full"></div>
-                <span className="text-xs text-cyan-500 uppercase tracking-wider">Live • {leaderboard.length} Teams</span>
+const LeaderboardPanel = ({ leaderboard: initialLeaderboard }) => {
+    const [leaderboard, setLeaderboard] = useState(initialLeaderboard || []);
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
+
+    // Auto-poll every 10 seconds
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await apiClient.get('/leaderboard', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setLeaderboard(res.data || []);
+                setLastUpdated(new Date());
+            } catch (err) {
+                console.error('Leaderboard poll error:', err);
+            }
+        };
+
+        const interval = setInterval(fetchLeaderboard, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Sync when parent passes new data
+    useEffect(() => {
+        if (initialLeaderboard) setLeaderboard(initialLeaderboard);
+    }, [initialLeaderboard]);
+
+    const handleManualRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await apiClient.get('/leaderboard', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setLeaderboard(res.data || []);
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error('Leaderboard refresh error:', err);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center border-b border-cyan-900 pb-4">
+                <h2 className="text-2xl text-white tracking-widest uppercase flex items-center gap-3">
+                    <Trophy className="text-yellow-500" size={24} />
+                    Live Leaderboard
+                </h2>
+                <div className="flex items-center gap-4">
+                    <span className="text-xs text-cyan-500/60">
+                        Updated {lastUpdated.toLocaleTimeString()}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 animate-pulse rounded-full"></div>
+                        <span className="text-xs text-cyan-500 uppercase tracking-wider">Auto-refresh • {leaderboard.length} Teams</span>
+                    </div>
+                    <button
+                        onClick={handleManualRefresh}
+                        disabled={refreshing}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-cyan-900/30 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 rounded text-xs uppercase tracking-wider transition-all"
+                    >
+                        <RotateCcw size={12} className={refreshing ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div className="border border-cyan-900/50 bg-black/40 overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-cyan-900/20 border-b border-cyan-900/30 text-xs text-cyan-400 uppercase tracking-wider">
+                    <div className="col-span-1">Rank</div>
+                    <div className="col-span-5">Name</div>
+                    <div className="col-span-2 text-center">Solved</div>
+                    <div className="col-span-2 text-center">Score</div>
+                    <div className="col-span-2 text-center">Submissions</div>
+                </div>
+
+                {/* Teams List */}
+                {leaderboard.length === 0 ? (
+                    <div className="p-8 text-center text-cyan-500/60">
+                        No teams on leaderboard yet
+                    </div>
+                ) : (
+                    <div className="divide-y divide-cyan-900/20 max-h-[60vh] overflow-y-auto">
+                        {leaderboard.map((team, idx) => (
+                            <div
+                                key={team.teamName}
+                                className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors hover:bg-cyan-900/10 ${idx === 0 ? 'bg-yellow-500/5' :
+                                        idx === 1 ? 'bg-gray-400/5' :
+                                            idx === 2 ? 'bg-orange-500/5' : ''
+                                    }`}
+                            >
+                                <div className="col-span-1">
+                                    {idx === 0 ? (
+                                        <span className="text-2xl">🥇</span>
+                                    ) : idx === 1 ? (
+                                        <span className="text-2xl">🥈</span>
+                                    ) : idx === 2 ? (
+                                        <span className="text-2xl">🥉</span>
+                                    ) : (
+                                        <span className="text-white font-bold text-lg">{team.rank}</span>
+                                    )}
+                                </div>
+                                <div className="col-span-5">
+                                    <div className="text-white font-bold">{team.teamName}</div>
+                                    <div className="text-cyan-400/40 text-xs">{team.collegeName || ''}</div>
+                                </div>
+                                <div className="col-span-2 text-center">
+                                    <span className="text-green-400 font-bold">{team.solvedCount}</span>
+                                </div>
+                                <div className="col-span-2 text-center">
+                                    <span className="text-yellow-400 font-bold text-xl">{team.totalPoints}</span>
+                                </div>
+                                <div className="col-span-2 text-center text-cyan-500">{team.totalSubmissions}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
-
-        <div className="border border-cyan-900/50 bg-black/40 overflow-hidden">
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-cyan-900/20 border-b border-cyan-900/30 text-xs text-cyan-400 uppercase tracking-wider">
-                <div className="col-span-1">Rank</div>
-                <div className="col-span-5">Name</div>
-                <div className="col-span-2 text-center">Solved</div>
-                <div className="col-span-2 text-center">Score</div>
-                <div className="col-span-2 text-center">Submissions</div>
-            </div>
-
-            {/* Teams List */}
-            {leaderboard.length === 0 ? (
-                <div className="p-8 text-center text-cyan-500/60">
-                    No teams on leaderboard yet
-                </div>
-            ) : (
-                <div className="divide-y divide-cyan-900/20 max-h-[60vh] overflow-y-auto">
-                    {leaderboard.map((team, idx) => (
-                        <div 
-                            key={team.teamName}
-                            className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors hover:bg-cyan-900/10 ${
-                                idx === 0 ? 'bg-yellow-500/5' : 
-                                idx === 1 ? 'bg-gray-400/5' : 
-                                idx === 2 ? 'bg-orange-500/5' : ''
-                            }`}
-                        >
-                            <div className="col-span-1">
-                                {idx === 0 ? (
-                                    <span className="text-2xl">🥇</span>
-                                ) : idx === 1 ? (
-                                    <span className="text-2xl">🥈</span>
-                                ) : idx === 2 ? (
-                                    <span className="text-2xl">🥉</span>
-                                ) : (
-                                    <span className="text-white font-bold text-lg">{team.rank}</span>
-                                )}
-                            </div>
-                            <div className="col-span-5">
-                                <div className="text-white font-bold">{team.teamName}</div>
-                                <div className="text-cyan-400/40 text-xs">{team.collegeName || ''}</div>
-                            </div>
-                            <div className="col-span-2 text-center">
-                                <span className="text-green-400 font-bold">{team.solvedCount}</span>
-                            </div>
-                            <div className="col-span-2 text-center">
-                                <span className="text-yellow-400 font-bold text-xl">{team.totalPoints}</span>
-                            </div>
-                            <div className="col-span-2 text-center text-cyan-500">{team.totalSubmissions}</div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    </div>
-);
+    );
+};

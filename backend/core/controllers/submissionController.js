@@ -2,7 +2,7 @@ const Submission = require("../models/Submission");
 const Question = require("../models/Question");
 const Team = require("../models/Team");
 const axios = require("axios");
-const { emitLeaderboardUpdate, emitSolveNotification } = require("../utils/socketHandlers");
+
 
 const EXECUTION_SERVER_URL = process.env.EXECUTION_SERVER_URL || "http://localhost:6001";
 const EXECUTION_SECRET = process.env.EXECUTION_SECRET || "codemania-secret-key-2026";
@@ -36,7 +36,7 @@ exports.submitCode = async (req, res) => {
     });
 
     if (alreadySolved) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "You have already solved this question",
         alreadySolved: true
       });
@@ -73,7 +73,7 @@ exports.submitCode = async (req, res) => {
       execResult = execResponse.data;
     } catch (execError) {
       console.error("Execution server error:", execError.message);
-      return res.status(503).json({ 
+      return res.status(503).json({
         message: "Code execution service unavailable",
         error: execError.response?.data?.error || execError.message
       });
@@ -133,20 +133,7 @@ exports.submitCode = async (req, res) => {
 
     await team.save();
 
-    // 🔥 Emit socket events if leaderboard changed
-    if (shouldUpdateLeaderboard) {
-      const io = req.app.get("io");
-      
-      // Emit solve notification
-      emitSolveNotification(io, {
-        teamName: team.teamName,
-        questionTitle: question.title,
-        pointsAwarded
-      });
-      
-      // Emit updated leaderboard
-      await emitLeaderboardUpdate(io);
-    }
+
 
     // Return submission result
     res.status(201).json({
