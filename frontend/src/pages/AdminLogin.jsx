@@ -15,7 +15,7 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${CORE_BACKEND_URL}/api/auth/admin/login`, {
+      const response = await fetch(`${CORE_BACKEND_URL}/codemania/api/auth/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

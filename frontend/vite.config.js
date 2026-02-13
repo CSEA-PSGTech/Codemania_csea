@@ -4,8 +4,11 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/codemania/',
+  base: '/codemania',
   plugins: [react(), tailwindcss()],
+  server: {
+    allowedHosts: ['csea.psgtech.ac.in']
+  },
   build: {
     rollupOptions: {
       output: {
