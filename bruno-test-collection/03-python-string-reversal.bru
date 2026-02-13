@@ -1,0 +1,39 @@
+meta {
+  name: 03 - Python String Reversal
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:3000/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: codemania-secret-key-2026
+}
+
+body:json {
+  {
+    "code": "s = input()\nprint(s[::-1])",
+    "language": "python",
+    "testCases": [
+      {
+        "input": "hello",
+        "expectedOutput": "olleh"
+      },
+      {
+        "input": "codemania",
+        "expectedOutput": "ainamedoc"
+      },
+      {
+        "input": "nginx",
+        "expectedOutput": "xnign"
+      }
+    ],
+    "timeLimit": 2000,
+    "submissionId": "test-lb-003"
+  }
+}

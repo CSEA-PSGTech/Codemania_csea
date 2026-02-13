@@ -1,0 +1,35 @@
+meta {
+  name: 06 - Java Hello World
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:3000/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: codemania-secret-key-2026
+}
+
+body:json {
+  {
+    "code": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String name = sc.nextLine();\n        System.out.println(\"Hello, \" + name + \"!\");\n    }\n}",
+    "language": "java",
+    "testCases": [
+      {
+        "input": "World",
+        "expectedOutput": "Hello, World!"
+      },
+      {
+        "input": "Nginx",
+        "expectedOutput": "Hello, Nginx!"
+      }
+    ],
+    "timeLimit": 3000,
+    "submissionId": "test-lb-006"
+  }
+}
