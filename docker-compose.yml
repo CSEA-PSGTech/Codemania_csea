@@ -1,5 +1,23 @@
 services:
-  # Main Backend
+  # ── Frontend (Vite + React → served by nginx) ─────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Empty = relative URLs, so the frontend nginx proxies all API calls
+        VITE_CORE_BACKEND_URL: ""
+        VITE_EXECUTION_SERVER_URL: ""
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+      - execution-lb
+    restart: unless-stopped
+    networks:
+      - codemania-network
+
+  # ── Main Backend (Express + MongoDB + Socket.io) ──────────────────
   backend:
     build:
       context: ./backend/core
@@ -13,15 +31,16 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - EXECUTION_SERVER_URL=http://nginx:8080
+      - EXECUTION_SERVER_URL=http://execution-lb:8080
       - EXECUTION_SECRET=${EXECUTION_SECRET}
+      - TEAM_ACCESS_CODE=${TEAM_ACCESS_CODE}
     depends_on:
-      - nginx
+      - execution-lb
     restart: unless-stopped
     networks:
       - codemania-network
 
-  # Execution Server — scaled via docker compose up --scale execution=4
+  # ── Execution Server — scale via: docker compose up --scale execution=4
   execution:
     build:
       context: ./backend/execution-server
@@ -42,8 +61,8 @@ services:
           cpus: "2"
           memory: 1G
 
-  # Nginx — load balances execution servers
-  nginx:
+  # ── Execution Load Balancer (nginx — round-robins execution replicas)
+  execution-lb:
     image: nginx:alpine
     ports:
       - "8080:8080"
