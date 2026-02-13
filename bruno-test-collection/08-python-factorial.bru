@@ -1,0 +1,39 @@
+meta {
+  name: 08 - Python Factorial
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:3000/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: codemania-secret-key-2026
+}
+
+body:json {
+  {
+    "code": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n-1)\n\nn = int(input())\nprint(factorial(n))",
+    "language": "python",
+    "testCases": [
+      {
+        "input": "5",
+        "expectedOutput": "120"
+      },
+      {
+        "input": "0",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "7",
+        "expectedOutput": "5040"
+      }
+    ],
+    "timeLimit": 2000,
+    "submissionId": "test-lb-008"
+  }
+}

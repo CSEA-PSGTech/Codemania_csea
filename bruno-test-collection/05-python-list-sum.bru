@@ -1,0 +1,35 @@
+meta {
+  name: 05 - Python List Sum
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:3000/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: codemania-secret-key-2026
+}
+
+body:json {
+  {
+    "code": "n = int(input())\nnums = list(map(int, input().split()))\nprint(sum(nums))",
+    "language": "python",
+    "testCases": [
+      {
+        "input": "5\n1 2 3 4 5",
+        "expectedOutput": "15"
+      },
+      {
+        "input": "3\n10 20 30",
+        "expectedOutput": "60"
+      }
+    ],
+    "timeLimit": 2000,
+    "submissionId": "test-lb-005"
+  }
+}

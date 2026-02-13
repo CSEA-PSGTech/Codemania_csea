@@ -1,0 +1,35 @@
+meta {
+  name: 09 - Java Array Max
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://localhost:3000/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: codemania-secret-key-2026
+}
+
+body:json {
+  {
+    "code": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int max = Integer.MIN_VALUE;\n        for(int i = 0; i < n; i++) {\n            int num = sc.nextInt();\n            max = Math.max(max, num);\n        }\n        System.out.println(max);\n    }\n}",
+    "language": "java",
+    "testCases": [
+      {
+        "input": "5\n3 7 2 9 4",
+        "expectedOutput": "9"
+      },
+      {
+        "input": "4\n100 50 75 200",
+        "expectedOutput": "200"
+      }
+    ],
+    "timeLimit": 3000,
+    "submissionId": "test-lb-009"
+  }
+}

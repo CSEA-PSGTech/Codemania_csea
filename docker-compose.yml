@@ -9,7 +9,7 @@ services:
         VITE_CORE_BACKEND_URL: ""
         VITE_EXECUTION_SERVER_URL: ""
     ports:
-      - "3000:80"
+      - "4000:80"
     depends_on:
       - backend
       - execution-lb
@@ -23,7 +23,7 @@ services:
       context: ./backend/core
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5000-5009:5000"
     environment:
       - PORT=5000
       - MONGO_URI=${MONGO_URI}
@@ -31,7 +31,7 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - EXECUTION_SERVER_URL=http://execution-lb:8080
+      - EXECUTION_SERVER_URL=http://execution-lb:3000
       - EXECUTION_SECRET=${EXECUTION_SECRET}
       - TEAM_ACCESS_CODE=${TEAM_ACCESS_CODE}
     depends_on:
@@ -65,7 +65,7 @@ services:
   execution-lb:
     image: nginx:alpine
     ports:
-      - "8080:8080"
+      - "3000:3000"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

@@ -98,6 +98,23 @@ exports.submitCode = async (req, res) => {
 
     // Update team stats
     const team = await Team.findById(teamId);
+    if (!team) {
+      console.error("Team not found for teamId:", teamId);
+      // Still save submission but skip team update
+      return res.status(201).json({
+        message: status === "AC" ? "✅ Accepted!" : `❌ ${status}`,
+        submission: {
+          id: submission._id,
+          status: submission.status,
+          isCorrect: submission.isCorrect,
+          submissionTime: submission.submissionTime,
+          pointsAwarded: 0,
+          executionTime: submission.executionTime,
+          passedTestCases: submission.passedTestCases,
+          totalTestCases: submission.totalTestCases
+        }
+      });
+    }
     team.totalSubmissions += 1;
 
     let pointsAwarded = 0;
@@ -133,10 +150,21 @@ exports.submitCode = async (req, res) => {
 
     await team.save();
 
-
+    // Build test results safely
+    let testResults = [];
+    try {
+      testResults = (execResult.results || []).map((r, i) => ({
+        testCase: r?.testCase || i + 1,
+        verdict: r?.verdict || 'unknown',
+        time: r?.time || 0,
+        ...(r?.hidden ? {} : { expected: r?.expected || '', actual: r?.actual || '' })
+      }));
+    } catch (mapErr) {
+      console.error("Error mapping test results:", mapErr.message);
+    }
 
     // Return submission result
-    res.status(201).json({
+    return res.status(201).json({
       message: status === "AC" ? "✅ Accepted!" : `❌ ${status}`,
       submission: {
         id: submission._id,
@@ -148,17 +176,11 @@ exports.submitCode = async (req, res) => {
         passedTestCases: submission.passedTestCases,
         totalTestCases: submission.totalTestCases
       },
-      // Show test case results (hide details for hidden test cases)
-      testResults: execResult.results?.map((r, i) => ({
-        testCase: r.testCase,
-        verdict: r.verdict,
-        time: r.time,
-        ...(r.hidden ? {} : { expected: r.expected, actual: r.actual })
-      }))
+      testResults
     });
   } catch (error) {
-    console.error("Submission error:", error);
-    res.status(500).json({ message: "Server error during submission" });
+    console.error("Submission error:", error.message, error.stack);
+    res.status(500).json({ message: "Server error during submission", error: error.message });
   }
 };
 
