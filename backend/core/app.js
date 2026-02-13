@@ -28,22 +28,22 @@ const submissionRoutes = require("./routes/submissions");
 const leaderboardRoutes = require("./routes/leaderboard");
 const adminRoutes = require("./routes/admin");
 
-app.use("/api/auth", authRoutes);
-app.use("/api/questions", questionRoutes);
-app.use("/api/submissions", submissionRoutes);
-app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/codemania/api/auth", authRoutes);
+app.use("/codemania/api/questions", questionRoutes);
+app.use("/codemania/api/submissions", submissionRoutes);
+app.use("/codemania/api/leaderboard", leaderboardRoutes);
+app.use("/codemania/api/admin", adminRoutes);
 
 // ==================== ROUND STATUS (in-memory toggle) ====================
 let round1Active = false;
 
-app.get("/api/round-status", (req, res) => {
+app.get("/codemania/api/round-status", (req, res) => {
   res.json({ round1Active });
 });
 
 // Admin-only toggle
 const { verifyAdmin } = require("./middleware/admin");
-app.post("/api/admin/round-status", verifyAdmin, (req, res) => {
+app.post("/codemania/api/admin/round-status", verifyAdmin, (req, res) => {
   const { active } = req.body;
   round1Active = !!active;
   console.log(`🔔 Round 1 ${round1Active ? "ACTIVATED" : "DEACTIVATED"} by admin`);

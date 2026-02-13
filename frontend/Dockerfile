@@ -1,13 +1,10 @@
-# ── Stage 1: Build the Vite + React app ──────────────────────────────
-FROM node:20-alpine AS build
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files first (better layer caching)
+# Copy package files first for better caching
 COPY package*.json ./
-
-# Install all dependencies (including devDependencies for the build)
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .

@@ -12,7 +12,7 @@ function TeamLogin() {
 
   // Check round status on mount
   useEffect(() => {
-    fetch(`${CORE_BACKEND_URL}/api/round-status`)
+    fetch(`${CORE_BACKEND_URL}/codemania/api/round-status`)
       .then(res => res.json())
       .then(data => setRoundActive(data.round1Active))
       .catch(() => setRoundActive(false));

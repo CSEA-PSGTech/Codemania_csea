@@ -1,0 +1,76 @@
+pipeline {
+    agent {
+        label 'kriya'
+    }
+
+    environment {
+        REGISTRY = "ghcr.io"
+        GHCR_REPO = 'ghcr.io/csea-psgtech/codemania_csea-frontend'
+        IMAGE_TAG = 'latest'
+        DOCKER_CREDS = credentials('psgdcgit')
+    }
+
+    stages {
+        stage('Login to GHCR') {
+            steps {
+                sh '''
+                    echo "$DOCKER_CREDS_PSW" | docker login $REGISTRY -u $DOCKER_CREDS_USR --password-stdin
+                '''
+            }
+        }
+
+        stage('Pull Docker Image') {
+            steps {
+                sh "docker pull ${GHCR_REPO}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Stop Existing Container') {
+    steps {
+        script {
+            // Stop any container using port 6990
+            sh '''
+                CONTAINER_ID=$(docker ps -q --filter "publish=6990")
+                if [ ! -z "$CONTAINER_ID" ]; then
+                    echo "Stopping container on port 6990: $CONTAINER_ID"
+                    docker stop $CONTAINER_ID
+                    docker rm $CONTAINER_ID
+                fi
+                
+                if [ "$(docker ps -aq --filter name=codemania-frontend)" ]; then
+                    echo "Stopping codemania-frontend container"
+                    docker stop codemania-frontend || true
+                    docker rm codemania-frontend || true
+                fi
+            '''
+        }
+    }
+}
+
+        stage('Run Container') {
+            steps {
+                // Run the container with the frontend application
+                sh """
+                    docker run -d \
+                        --name codemania-frontend \
+                        -p 6990:5173 \
+                        --restart unless-stopped \
+                        ${GHCR_REPO}:${IMAGE_TAG}
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            // Always logout from GHCR after the pipeline
+            sh 'docker logout ghcr.io'
+        }
+        success {
+            echo 'Successfully deployed the frontend application!'
+        }
+        failure {
+            echo 'Pipeline failed! Please check the logs for details.'
+        }
+    }
+}

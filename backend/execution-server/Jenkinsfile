@@ -1,0 +1,94 @@
+pipeline {
+    agent {
+        label 'kriya'
+    }
+
+    environment {
+        REGISTRY = "ghcr.io"
+        GHCR_REPO = 'ghcr.io/csea-psgtech/codemania_csea-execution-server'
+        IMAGE_TAG = 'latest'
+        DOCKER_CREDS = credentials('psgdcgit')
+        
+        // Execution Server Environment Variables
+        EXECUTION_PORT = '6001'
+        EXECUTION_SECRET = credentials('EXECUTION_SECRET')
+    }
+
+    stages {
+        stage('Login to GHCR') {
+            steps {
+                sh '''
+                    echo "$DOCKER_CREDS_PSW" | docker login $REGISTRY -u $DOCKER_CREDS_USR --password-stdin
+                '''
+            }
+        }
+
+        stage('Pull Docker Image') {
+            steps {
+                sh "docker pull ${GHCR_REPO}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Stop Existing Container') {
+            steps {
+                script {
+                    sh '''
+                        # Stop any container using port 6001
+                        CONTAINER_ID=$(docker ps -q --filter "publish=6001")
+                        if [ ! -z "$CONTAINER_ID" ]; then
+                            echo "Stopping container on port 6001: $CONTAINER_ID"
+                            docker stop $CONTAINER_ID
+                            docker rm $CONTAINER_ID
+                        fi
+                        
+                        # Stop named container if exists
+                        if [ "$(docker ps -aq --filter name=codemania-execution-server)" ]; then
+                            echo "Stopping codemania-execution-server container"
+                            docker stop codemania-execution-server || true
+                            docker rm codemania-execution-server || true
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                sh """
+                    docker run -d \
+                        --name codemania-execution-server \
+                        -p 6001:6001 \
+                        -e EXECUTION_PORT=${EXECUTION_PORT} \
+                        -e EXECUTION_SECRET='${EXECUTION_SECRET}' \
+                        --restart unless-stopped \
+                        ${GHCR_REPO}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    echo "Waiting for container to start..."
+                    sleep 5
+                    docker ps | grep codemania-execution-server
+                    echo "Container logs:"
+                    docker logs codemania-execution-server --tail 20
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout ghcr.io'
+        }
+        success {
+            echo 'Successfully deployed Execution Server!'
+        }
+        failure {
+            echo 'Pipeline failed! Check logs for details.'
+            sh 'docker logs codemania-execution-server --tail 50 || true'
+        }
+    }
+}
