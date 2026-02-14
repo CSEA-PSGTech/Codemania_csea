@@ -76,8 +76,8 @@ const ChallengeCard = ({ question, onStart }) => {
     return (
         <div
             className={`relative group bg-black/90 border transition-all duration-300 overflow-hidden flex flex-col h-full ${isSolved
-                    ? 'border-green-500/50 opacity-75'
-                    : 'border-cyan-900/50 hover:border-cyan-400/50'
+                ? 'border-green-500/50 opacity-75'
+                : 'border-cyan-900/50 hover:border-cyan-400/50'
                 }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -116,7 +116,7 @@ const ChallengeCard = ({ question, onStart }) => {
                 <div className="flex items-center justify-between pt-4 border-t border-cyan-900/30">
                     <div className="flex items-center gap-2 text-cyan-500/80 text-sm font-mono">
                         <Clock size={16} />
-                        <span>{Math.ceil(question.timeLimit / 1000)}s</span>
+                        <span>Time Limit: {question.timeLimitPython || 1000}ms</span>
                     </div>
 
                     {isSolved ? (
@@ -204,7 +204,7 @@ export default function ChallengeDashboard() {
                     teamsSolved: q.noOfTeamsSolved,
                     difficulty: q.tag || 'Medium',
                     category: q.tag || 'Code Optimization',
-                    timeLimit: q.timeLimit || 1000,
+                    timeLimitPython: q.timeLimitPython || 1000,
                     solved: solved.includes(q._id)
                 }));
 
@@ -308,8 +308,8 @@ export default function ChallengeDashboard() {
                         {[
                             { label: 'Active Nodes', val: loading ? '...' : questions.length.toString(), icon: Cpu },
                             { label: 'Total Points', val: loading ? '...' : questions.reduce((sum, q) => sum + q.points, 0).toString(), icon: Zap },
-                            { label: 'System Load', val: '42%', icon: AlertTriangle },
-                            { label: 'Security Level', val: 'MAX', icon: Shield },
+                            { label: 'Your Points', val: loading ? '...' : (currentTeam?.totalPoints || 0).toString(), icon: Shield },
+                            { label: 'Solved', val: loading ? '...' : solvedQuestionIds.length.toString(), icon: CheckCircle },
                         ].map((stat, idx) => (
                             <div key={idx} className="bg-cyan-900/5 border border-cyan-900/30 p-4 flex items-center gap-4">
                                 <stat.icon size={20} className="text-cyan-500/50" />

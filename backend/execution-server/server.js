@@ -3,7 +3,6 @@ require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const express = require("express");
 const cors = require("cors");
 const { runCode } = require("./utils/runner");
-const { pool: jvmPool } = require("./utils/jvmPool");
 
 const app = express();
 const PORT = process.env.EXECUTION_PORT || 6001;  // Use EXECUTION_PORT, not PORT
@@ -44,7 +43,7 @@ function enqueue(fn) {
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 /**
  * Middleware to verify requests are from main backend
@@ -77,7 +76,7 @@ app.get("/health", (req, res) => {
     activeJobs,
     queueLength: jobQueue.length,
     maxConcurrent: MAX_CONCURRENT,
-    jvmPool: jvmPool.initialized ? "active" : "inactive",
+
     timestamp: new Date().toISOString(),
   });
 });
@@ -97,9 +96,9 @@ app.post("/execute", verifySecret, async (req, res) => {
       return res.status(400).json({ error: "Code is required" });
     }
 
-    if (!language || !["python", "java"].includes(language.toLowerCase())) {
+    if (!language || !["python"].includes(language.toLowerCase())) {
       return res.status(400).json({
-        error: "Invalid language. Supported: python, java",
+        error: "Invalid language. Supported: python",
       });
     }
 
@@ -182,11 +181,8 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Start server — initialize JVM pool first, then listen
+// Start server
 (async () => {
-  // Initialize warm JVM worker pool (non-blocking — server starts even if pool fails)
-  await jvmPool.init();
-
   app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════════════════════════╗
@@ -197,12 +193,11 @@ if (process.env.NODE_ENV !== "production") {
 ║  Time Limit:  ${DEFAULT_TIME_LIMIT}ms                                      ║
 ║  Max Code:    ${MAX_CODE_SIZE} chars                                 ║
 ║  Concurrency: ${MAX_CONCURRENT} parallel jobs                             ║
-║  JVM Pool:    ${jvmPool.initialized ? "Active ✓" : "Inactive (fallback mode)"}                   ║
 ╚════════════════════════════════════════════════════════════╝
     `);
   });
 })();
 
 // Graceful shutdown
-process.on("SIGINT",  () => { jvmPool.shutdown(); process.exit(0); });
-process.on("SIGTERM", () => { jvmPool.shutdown(); process.exit(0); });
+process.on("SIGINT", () => { process.exit(0); });
+process.on("SIGTERM", () => { process.exit(0); });

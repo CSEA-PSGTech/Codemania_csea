@@ -1,0 +1,55 @@
+meta {
+  name: 11 - Java Load Test (x20)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/execute
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Execution-Secret: {{execution_secret}}
+}
+
+body:json {
+  {
+    "code": "import java.util.*;\n\npublic class Solution {\n    public static int solve(int n) {\n        int sum = 0;\n        for (int i = 1; i <= n; i++) {\n            sum += i;\n        }\n        return sum;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        System.out.println(solve(n));\n    }\n}",
+    "language": "java",
+    "testCases": [
+      {
+        "input": "5",
+        "expectedOutput": "15"
+      },
+      {
+        "input": "10",
+        "expectedOutput": "55"
+      },
+      {
+        "input": "100",
+        "expectedOutput": "5050"
+      }
+    ],
+    "timeLimit": 2000,
+    "submissionId": "load-test-java"
+  }
+}
+
+script:post-response {
+  console.log("=== RESULT ===");
+  console.log("Status:", res.status);
+  console.log("Verdict:", res.body.verdict);
+  console.log("Server Time:", res.body.serverTime + "ms");
+  console.log("Passed:", res.body.passedTestCases + "/" + res.body.totalTestCases);
+  if (res.body.results) {
+    res.body.results.forEach(function(r) {
+      console.log("  Test " + r.testCase + ": " + r.verdict + " (" + r.time + "ms)");
+    });
+  }
+  if (res.body.error) {
+    console.log("Error:", res.body.error);
+  }
+}

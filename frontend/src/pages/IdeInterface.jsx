@@ -6,12 +6,11 @@ import {
     AlertTriangle, X, FileCode, Copy, Clock, Code,
     Zap, Send, Wifi, WifiOff, Loader
 } from 'lucide-react';
-import apiClient, { API, EXECUTION_CONFIG } from '../config/api.js';
+import apiClient, { API, EXECUTION_CONFIG, CORE_BACKEND_URL } from '../config/api.js';
 
 // Language configuration
 const LANGUAGES = {
-    python: { name: "Python", extension: ".py" },
-    java: { name: "Java", extension: ".java" }
+    python: { name: "Python", extension: ".py" }
 };
 
 // --- CSS-ONLY BACKGROUND (zero JS, matches CyberCore look) ---
@@ -185,13 +184,13 @@ export default function IdeInterface() {
 
                 const data = problemRes.data;
                 const solvedIds = solvedRes.data.solvedQuestionIds || [];
-                
+
                 // Check if this question is already solved
                 const questionSolved = solvedIds.includes(problemId);
                 setIsSolved(questionSolved);
-                
+
                 // Map API response to expected problem structure
-                const timeLimitMs = data.timeLimit || 1000;
+                const timeLimitPythonMs = data.timeLimitPython || 1000;
                 const constraints = [];
 
                 if (data.constraints) {
@@ -203,21 +202,20 @@ export default function IdeInterface() {
                     constraints.push(`N <= ${data.maxInputN}`);
                 }
 
-                constraints.push(`Time limit: ${Math.ceil(timeLimitMs / 1000)}s (~1e8 ops)`);
+                constraints.push(`Time Limit: ${timeLimitPythonMs}ms`);
 
                 const mappedProblem = {
                     id: data._id,
                     title: data.title,
                     description: data.description,
                     nonOptimizedCode: data.nonOptimizedCode,
-                    nonOptimizedCodeJava: data.nonOptimizedCodeJava,
                     points: data.currentPoints,
                     totalPoints: data.totalPoints,
                     teamsSolved: data.noOfTeamsSolved,
                     difficulty: data.tag || 'Medium',
                     category: 'Code Optimization',
-                    timeLimitMs,
-                    timeLimit: `${Math.ceil(timeLimitMs / 1000)}s`,
+                    timeLimitPythonMs,
+                    timeLimit: `${timeLimitPythonMs}ms`,
                     memoryLimit: `${data.memoryLimit || 256}MB`,
                     // Map sample test cases from API
                     sampleTestCases: data.sampleTestCases || [],
@@ -231,8 +229,7 @@ export default function IdeInterface() {
                     constraints,
                     // For code optimization, the starter code is the non-optimized code
                     starterCode: {
-                        python: data.nonOptimizedCode || '# Write your optimized code here',
-                        java: data.nonOptimizedCodeJava || '// Write your optimized Java code here\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}'
+                        python: data.nonOptimizedCode || '# Write your optimized code here'
                     }
                 };
 
@@ -310,7 +307,7 @@ export default function IdeInterface() {
                 code,
                 language: activeLang,
                 testCases: testCasesToRun,
-                timeLimit: problem?.timeLimitMs || EXECUTION_CONFIG.defaultTimeLimit
+                timeLimit: problem?.timeLimitPythonMs || EXECUTION_CONFIG.defaultTimeLimit
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -375,12 +372,12 @@ export default function IdeInterface() {
 
             const result = response.data;
             const passed = result.submission?.isCorrect || false;
-            
+
             // If submission was successful and accepted, mark as solved
             if (passed) {
                 setIsSolved(true);
             }
-            
+
             setOutput({
                 status: passed ? 'Accepted' :
                     result.submission?.status === 'WA' ? 'Wrong Answer' :
@@ -414,11 +411,32 @@ export default function IdeInterface() {
         }
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    const handleCopy = () => { };
+
+    // ── Anti-cheat: block copy, paste, cut, select, right-click ──
+    useEffect(() => {
+        const blockKeys = (e) => {
+            if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x', 'a'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        };
+        const blockContext = (e) => e.preventDefault();
+        const blockCopyPaste = (e) => e.preventDefault();
+
+        document.addEventListener('keydown', blockKeys);
+        document.addEventListener('contextmenu', blockContext);
+        document.addEventListener('copy', blockCopyPaste);
+        document.addEventListener('paste', blockCopyPaste);
+        document.addEventListener('cut', blockCopyPaste);
+
+        return () => {
+            document.removeEventListener('keydown', blockKeys);
+            document.removeEventListener('contextmenu', blockContext);
+            document.removeEventListener('copy', blockCopyPaste);
+            document.removeEventListener('paste', blockCopyPaste);
+            document.removeEventListener('cut', blockCopyPaste);
+        };
+    }, []);
 
     if (!problem) {
         return (
@@ -431,7 +449,7 @@ export default function IdeInterface() {
     const lineCount = code.split('\n').length;
 
     return (
-        <div className="flex flex-col h-screen bg-black text-white font-mono overflow-hidden selection:bg-cyan-500 selection:text-black">
+        <div className="flex flex-col h-screen bg-black text-white font-mono overflow-hidden" style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
 
             {/* BACKGROUND */}
             <CyberBackground />
@@ -493,9 +511,9 @@ export default function IdeInterface() {
                         <div className="flex items-center gap-2 text-xs text-cyan-500/60">
                             <Zap size={14} /> <span>{problem.points} PTS</span>
                         </div>
-                        <div className={`flex items-center gap-2 text-xs ${serverOnline === true ? 'text-cyan-400' : serverOnline === false ? 'text-red-400' : 'text-yellow-400'}`}>
+                        <div className={`flex items-center gap-2 text-xs ${serverOnline === true ? 'text-emerald-400' : serverOnline === false ? 'text-red-400' : 'text-yellow-400'}`}>
                             {serverOnline === true ? <Wifi size={14} /> : serverOnline === false ? <WifiOff size={14} /> : <Cpu size={14} className="animate-pulse" />}
-                            <span>{serverOnline === true ? 'Server Online' : serverOnline === false ? 'Offline' : 'Checking...'}</span>
+                            <span>{serverOnline === true ? 'Online' : serverOnline === false ? 'Offline' : 'Checking...'}</span>
                         </div>
                     </div>
 
@@ -523,10 +541,10 @@ export default function IdeInterface() {
                             disabled={isRunning || isSubmitting || isSolved}
                             className={`px-4 py-1.5 border text-xs font-bold uppercase tracking-wider 
                 transition-all flex items-center gap-2
-                ${isSolved 
-                    ? 'bg-green-900/50 text-green-400 border-green-500 cursor-not-allowed' 
-                    : 'bg-cyan-600 text-black border-cyan-500 hover:bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]'
-                }
+                ${isSolved
+                                    ? 'bg-green-900/50 text-green-400 border-green-500 cursor-not-allowed'
+                                    : 'bg-cyan-600 text-black border-cyan-500 hover:bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)]'
+                                }
                 ${(isRunning || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {isSolved ? (
@@ -595,76 +613,76 @@ export default function IdeInterface() {
 
                                 {/* Examples */}
                                 {problem.examples && problem.examples.length > 0 && (
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold text-cyan-500 uppercase tracking-widest flex items-center gap-2">
-                                        <Code size={14} /> Examples
-                                    </h3>
-                                    {problem.examples.map((ex, idx) => (
-                                        <div key={idx} className="bg-cyan-900/5 border border-cyan-900/30 p-4 rounded-sm">
-                                            <h4 className="text-xs font-bold text-cyan-400 uppercase mb-3">Example {idx + 1}</h4>
-                                            <div className="space-y-2 text-sm font-mono">
-                                                <div>
-                                                    <span className="text-cyan-700 select-none">Input: </span>
-                                                    <span className="text-cyan-100">{ex.input}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-cyan-700 select-none">Output: </span>
-                                                    <span className="text-cyan-100">{ex.output}</span>
-                                                </div>
-                                                {ex.explanation && (
-                                                    <div className="text-cyan-500/60 text-xs italic mt-2 pt-2 border-t border-cyan-900/20">
-                                                        💡 {ex.explanation}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                )}
-
-                                {/* Constraints */}
-                                {problem.constraints && problem.constraints.length > 0 && (
-                                <div>
-                                    <h3 className="text-xs font-bold text-cyan-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
-                                        <AlertTriangle size={12} /> Constraints
-                                    </h3>
-                                    <ul className="space-y-1.5 text-sm text-cyan-100/60">
-                                        {problem.constraints.map((c, i) => (
-                                            <li key={i} className="flex items-start gap-2">
-                                                <span className="text-cyan-500 mt-1">•</span>
-                                                <code className="text-cyan-300/80">{c}</code>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                )}
-
-                                {/* Sample Test Cases in Description Tab */}
-                                {(problem.sampleTestCases || []).length > 0 && (
-                                <div className="mt-6">
-                                    <h3 className="text-xs font-bold text-cyan-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
-                                        <CheckCircle size={12} /> Sample Test Cases
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {(problem.sampleTestCases || []).map((tc, idx) => (
-                                            <div key={idx} className="bg-cyan-900/10 border border-cyan-900/30 p-3 rounded">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-xs font-bold text-cyan-400">Sample #{idx + 1}</span>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold text-cyan-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Code size={14} /> Examples
+                                        </h3>
+                                        {problem.examples.map((ex, idx) => (
+                                            <div key={idx} className="bg-cyan-900/5 border border-cyan-900/30 p-4 rounded-sm">
+                                                <h4 className="text-xs font-bold text-cyan-400 uppercase mb-3">Example {idx + 1}</h4>
+                                                <div className="space-y-2 text-sm font-mono">
                                                     <div>
-                                                        <span className="text-cyan-600 text-[10px] uppercase block mb-1">Input</span>
-                                                        <pre className="text-cyan-100 bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">{tc.input}</pre>
+                                                        <span className="text-cyan-700 select-none">Input: </span>
+                                                        <span className="text-cyan-100">{ex.input}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-cyan-600 text-[10px] uppercase block mb-1">Output</span>
-                                                        <pre className="text-cyan-100 bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">{tc.output}</pre>
+                                                        <span className="text-cyan-700 select-none">Output: </span>
+                                                        <span className="text-cyan-100">{ex.output}</span>
                                                     </div>
+                                                    {ex.explanation && (
+                                                        <div className="text-cyan-500/60 text-xs italic mt-2 pt-2 border-t border-cyan-900/20">
+                                                            💡 {ex.explanation}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                )}
+
+                                {/* Constraints */}
+                                {problem.constraints && problem.constraints.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-bold text-cyan-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
+                                            <AlertTriangle size={12} /> Constraints
+                                        </h3>
+                                        <ul className="space-y-1.5 text-sm text-cyan-100/60">
+                                            {problem.constraints.map((c, i) => (
+                                                <li key={i} className="flex items-start gap-2">
+                                                    <span className="text-cyan-500 mt-1">•</span>
+                                                    <code className="text-cyan-300/80">{c}</code>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Sample Test Cases in Description Tab */}
+                                {(problem.sampleTestCases || []).length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="text-xs font-bold text-cyan-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
+                                            <CheckCircle size={12} /> Sample Test Cases
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {(problem.sampleTestCases || []).map((tc, idx) => (
+                                                <div key={idx} className="bg-cyan-900/10 border border-cyan-900/30 p-3 rounded">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-bold text-cyan-400">Sample #{idx + 1}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                                                        <div>
+                                                            <span className="text-cyan-600 text-[10px] uppercase block mb-1">Input</span>
+                                                            <pre className="text-cyan-100 bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">{tc.input}</pre>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-cyan-600 text-[10px] uppercase block mb-1">Output</span>
+                                                            <pre className="text-cyan-100 bg-black/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">{tc.output}</pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </>
                         ) : (
@@ -721,18 +739,11 @@ export default function IdeInterface() {
                     <div className="h-11 border-b border-cyan-900/30 flex items-center justify-between px-4 bg-black/50">
                         <div className="flex items-center gap-3">
                             <span className="text-cyan-600 text-xs font-bold uppercase">Language:</span>
-                            <LanguageDropdown
-                                activeLang={activeLang}
-                                onSelect={setActiveLang}
-                                languages={LANGUAGES}
-                            />
+                            <span className="flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-900/20 px-3 py-1.5 border border-cyan-500/30">Python</span>
                         </div>
                         <div className="flex items-center gap-3 text-cyan-600">
                             <button onClick={handleReset} title="Reset Code" className="hover:text-cyan-400 transition-colors p-1">
                                 <RotateCcw size={14} />
-                            </button>
-                            <button onClick={handleCopy} title="Copy Code" className="hover:text-cyan-400 transition-colors p-1 relative">
-                                {copied ? <CheckCircle size={14} className="text-cyan-400" /> : <Copy size={14} />}
                             </button>
                             <button title="Fullscreen" className="hover:text-cyan-400 transition-colors p-1">
                                 <Maximize2 size={14} />
@@ -753,9 +764,13 @@ export default function IdeInterface() {
                         <textarea
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
+                            onCopy={(e) => e.preventDefault()}
+                            onPaste={(e) => e.preventDefault()}
+                            onCut={(e) => e.preventDefault()}
+                            onSelect={(e) => e.target.selectionStart = e.target.selectionEnd}
                             className="flex-1 bg-transparent text-cyan-100 p-4 resize-none focus:outline-none leading-6 text-sm"
                             spellCheck="false"
-                            style={{ tabSize: 4 }}
+                            style={{ tabSize: 4, userSelect: 'text', caretColor: '#22d3ee' }}
                         />
                     </div>
 

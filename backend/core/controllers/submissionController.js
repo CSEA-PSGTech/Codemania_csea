@@ -18,8 +18,8 @@ exports.submitCode = async (req, res) => {
       return res.status(400).json({ message: "Code and language are required" });
     }
 
-    if (!["python", "java"].includes(language.toLowerCase())) {
-      return res.status(400).json({ message: "Supported languages: python, java" });
+    if (!["python"].includes(language.toLowerCase())) {
+      return res.status(400).json({ message: "Supported languages: python" });
     }
 
     // Validate question exists
@@ -62,21 +62,43 @@ exports.submitCode = async (req, res) => {
           code,
           language: language.toLowerCase(),
           testCases,
-          timeLimit: question.timeLimit || 2000,
+          timeLimit: question.timeLimitPython || 1000,
           submissionId: `${teamId}-${questionId}-${Date.now()}`
         },
         {
           headers: { "x-execution-secret": EXECUTION_SECRET },
-          timeout: 120000 // 120 second max wait (Java can be slow with multiple test cases)
+          timeout: 120000,
+          maxBodyLength: 50 * 1024 * 1024,
+          maxContentLength: 50 * 1024 * 1024
         }
       );
       execResult = execResponse.data;
     } catch (execError) {
       console.error("Execution server error:", execError.message);
-      return res.status(503).json({
-        message: "Code execution service unavailable",
-        error: execError.response?.data?.error || execError.message
-      });
+
+      // If the axios call timed out, it's likely a TLE scenario
+      if (execError.code === 'ECONNABORTED' || execError.code === 'ETIMEDOUT') {
+        return res.status(200).json({
+          message: "❌ TLE",
+          submission: {
+            status: "TLE",
+            isCorrect: false,
+            passedTestCases: 0,
+            totalTestCases: testCases.length
+          },
+          testResults: []
+        });
+      }
+
+      // If exec server returned a response with verdict (e.g. TLE, RE), forward it
+      if (execError.response?.data?.verdict) {
+        execResult = execError.response.data;
+      } else {
+        return res.status(503).json({
+          message: "Code execution service unavailable",
+          error: execError.response?.data?.error || execError.message
+        });
+      }
     }
 
     const status = execResult.verdict;
@@ -221,8 +243,8 @@ exports.runCode = async (req, res) => {
       return res.status(400).json({ message: "Code and language are required" });
     }
 
-    if (!["python", "java"].includes(language.toLowerCase())) {
-      return res.status(400).json({ message: "Supported languages: python, java" });
+    if (!["python"].includes(language.toLowerCase())) {
+      return res.status(400).json({ message: "Supported languages: python" });
     }
 
     if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
@@ -241,7 +263,9 @@ exports.runCode = async (req, res) => {
         },
         {
           headers: { "x-execution-secret": EXECUTION_SECRET },
-          timeout: 30000
+          timeout: 120000,
+          maxBodyLength: 50 * 1024 * 1024,
+          maxContentLength: 50 * 1024 * 1024
         }
       );
 
