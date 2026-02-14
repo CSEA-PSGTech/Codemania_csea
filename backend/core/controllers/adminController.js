@@ -23,10 +23,9 @@ exports.createQuestion = async (req, res) => {
       description,
       constraints,
       nonOptimizedCode,
-      nonOptimizedCodeJava,
       totalPoints,
       testcases,
-      timeLimit,
+      timeLimitPython,
       memoryLimit,
       maxInputN
     } = req.body;
@@ -37,11 +36,10 @@ exports.createQuestion = async (req, res) => {
       description,
       constraints,
       nonOptimizedCode,
-      nonOptimizedCodeJava,
       totalPoints,
       currentPoints: totalPoints, // starts at max
       testcases,
-      timeLimit,
+      timeLimitPython,
       memoryLimit,
       maxInputN
     });
@@ -67,11 +65,10 @@ exports.updateQuestion = async (req, res) => {
       description,
       constraints,
       nonOptimizedCode,
-      nonOptimizedCodeJava,
       totalPoints,
       currentPoints,
       testcases,
-      timeLimit,
+      timeLimitPython,
       memoryLimit,
       maxInputN
     } = req.body;
@@ -84,11 +81,10 @@ exports.updateQuestion = async (req, res) => {
         description,
         constraints,
         nonOptimizedCode,
-        nonOptimizedCodeJava,
         totalPoints,
         currentPoints,
         testcases,
-        timeLimit,
+        timeLimitPython,
         memoryLimit,
         maxInputN
       },

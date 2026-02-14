@@ -239,8 +239,8 @@ export default function AdminDashboard() {
                         }}
                         disabled={roundToggling}
                         className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all ${roundActive
-                                ? 'bg-green-500/20 border-green-500 text-green-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-400'
-                                : 'bg-red-500/20 border-red-500 text-red-400 hover:bg-green-500/20 hover:border-green-500 hover:text-green-400'
+                            ? 'bg-green-500/20 border-green-500 text-green-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-400'
+                            : 'bg-red-500/20 border-red-500 text-red-400 hover:bg-green-500/20 hover:border-green-500 hover:text-green-400'
                             }`}
                     >
                         {roundToggling ? 'TOGGLING...' : roundActive ? '🟢 ROUND 1 ACTIVE — CLICK TO DEACTIVATE' : '🔴 ROUND 1 INACTIVE — CLICK TO ACTIVATE'}
@@ -377,7 +377,7 @@ const QuestionManager = ({ questions, onCreate, onDelete, onUpdate }) => {
                                 {q.tag && <span className="text-emerald-400 border border-emerald-800 px-1">{q.tag}</span>}
                                 <span>PTS: {q.totalPoints}</span>
                                 <span>CUR: {q.currentPoints}</span>
-                                <span>TL: {Math.ceil((q.timeLimit || 1000) / 1000)}s</span>
+                                <span>TL: {q.timeLimitPython || 1000}ms</span>
                                 <span>{q.maxInputN ? `N<=${q.maxInputN}` : 'N:-'}</span>
                                 <span className="flex items-center gap-1">
                                     <Eye size={12} /> {q.testcases?.filter(tc => !tc.hidden).length || 0} sample
@@ -417,9 +417,8 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
         description: '',
         constraints: '',
         nonOptimizedCode: '',
-        nonOptimizedCodeJava: '',
         totalPoints: 100,
-        timeLimit: 1000,
+        timeLimitPython: 1000,
         memoryLimit: 256,
         maxInputN: ''
     });
@@ -454,7 +453,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
         }
         const payload = {
             ...formData,
-            timeLimit: Number(formData.timeLimit) || 1000,
+            timeLimitPython: Math.max(1, Number(formData.timeLimitPython) || 1000),
             memoryLimit: Number(formData.memoryLimit) || 256,
             maxInputN: formData.maxInputN === '' ? null : Number(formData.maxInputN),
             testcases: validTestcases
@@ -498,15 +497,16 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <label className="text-xs text-cyan-400 uppercase">Time Limit (ms)</label>
+                                <label className="text-xs text-cyan-400 uppercase">Python Time Limit (ms)</label>
                                 <input
                                     type="number"
-                                    min="100"
+                                    min="1"
                                     className="w-full bg-black border border-cyan-900 p-2 text-white focus:border-cyan-400 focus:outline-none"
-                                    value={formData.timeLimit}
-                                    onChange={e => setFormData({ ...formData, timeLimit: e.target.value })}
+                                    value={formData.timeLimitPython}
+                                    onChange={e => setFormData({ ...formData, timeLimitPython: e.target.value })}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-xs text-cyan-400 uppercase">Memory Limit (MB)</label>
                                 <input
@@ -575,15 +575,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs text-orange-400 uppercase">Java Non-Optimized Code (O(n²) starter)</label>
-                            <textarea
-                                className="w-full h-32 bg-black border border-orange-900 p-2 text-gray-400 focus:border-orange-400 focus:outline-none font-mono text-xs"
-                                placeholder="// Paste the non-optimized Java code here...\nimport java.util.*;\npublic class Main { ... }"
-                                value={formData.nonOptimizedCodeJava}
-                                onChange={e => setFormData({ ...formData, nonOptimizedCodeJava: e.target.value })}
-                            />
-                        </div>
+
 
                         {/* Test Cases Section */}
                         <div className="space-y-3 border border-cyan-900/50 p-4 bg-cyan-900/5">
@@ -632,7 +624,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                                             <div className="space-y-1">
                                                 <label className="text-[10px] text-cyan-600 uppercase">Input</label>
                                                 <textarea
-                                                    className="w-full h-16 bg-black border border-cyan-900/50 p-2 text-white font-mono text-xs focus:border-cyan-400 focus:outline-none resize-none"
+                                                    className="w-full h-32 bg-black border border-cyan-900/50 p-2 text-white font-mono text-xs focus:border-cyan-400 focus:outline-none resize-y"
                                                     placeholder="5&#10;1 3 4 2 2"
                                                     value={tc.input}
                                                     onChange={e => updateTestCase(idx, 'input', e.target.value)}
@@ -641,7 +633,7 @@ const CreateQuestionForm = ({ onClose, onSubmit }) => {
                                             <div className="space-y-1">
                                                 <label className="text-[10px] text-cyan-600 uppercase">Expected Output</label>
                                                 <textarea
-                                                    className="w-full h-16 bg-black border border-cyan-900/50 p-2 text-white font-mono text-xs focus:border-cyan-400 focus:outline-none resize-none"
+                                                    className="w-full h-32 bg-black border border-cyan-900/50 p-2 text-white font-mono text-xs focus:border-cyan-400 focus:outline-none resize-y"
                                                     placeholder="2"
                                                     value={tc.output}
                                                     onChange={e => updateTestCase(idx, 'output', e.target.value)}
@@ -674,9 +666,8 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
         description: question.description || '',
         constraints: question.constraints || '',
         nonOptimizedCode: question.nonOptimizedCode || '',
-        nonOptimizedCodeJava: question.nonOptimizedCodeJava || '',
         totalPoints: question.totalPoints || 100,
-        timeLimit: question.timeLimit || 1000,
+        timeLimitPython: question.timeLimitPython || 1000,
         memoryLimit: question.memoryLimit || 256,
         maxInputN: question.maxInputN ?? ''
     });
@@ -712,7 +703,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
         }
         const payload = {
             ...formData,
-            timeLimit: Number(formData.timeLimit) || 1000,
+            timeLimitPython: Math.max(1, Number(formData.timeLimitPython) || 1000),
             memoryLimit: Number(formData.memoryLimit) || 256,
             maxInputN: formData.maxInputN === '' ? null : Number(formData.maxInputN),
             testcases: validTestcases
@@ -757,15 +748,16 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <label className="text-xs text-yellow-400 uppercase">Time Limit (ms)</label>
+                                <label className="text-xs text-yellow-400 uppercase">Python Time Limit (ms)</label>
                                 <input
                                     type="number"
-                                    min="100"
+                                    min="1"
                                     className="w-full bg-black border border-yellow-900 p-2 text-white focus:border-yellow-400 focus:outline-none"
-                                    value={formData.timeLimit}
-                                    onChange={e => setFormData({ ...formData, timeLimit: e.target.value })}
+                                    value={formData.timeLimitPython}
+                                    onChange={e => setFormData({ ...formData, timeLimitPython: e.target.value })}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-xs text-yellow-400 uppercase">Memory Limit (MB)</label>
                                 <input
@@ -834,15 +826,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs text-orange-400 uppercase">Java Non-Optimized Code (O(n²) starter)</label>
-                            <textarea
-                                className="w-full h-32 bg-black border border-orange-900 p-2 text-gray-400 focus:border-orange-400 focus:outline-none font-mono text-xs"
-                                placeholder="// Paste the non-optimized Java code here...\nimport java.util.*;\npublic class Main { ... }"
-                                value={formData.nonOptimizedCodeJava}
-                                onChange={e => setFormData({ ...formData, nonOptimizedCodeJava: e.target.value })}
-                            />
-                        </div>
+
 
                         {/* Test Cases Section */}
                         <div className="space-y-3 border border-yellow-900/50 p-4 bg-yellow-900/5">
@@ -891,7 +875,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                                             <div className="space-y-1">
                                                 <label className="text-[10px] text-yellow-600 uppercase">Input</label>
                                                 <textarea
-                                                    className="w-full h-16 bg-black border border-yellow-900/50 p-2 text-white font-mono text-xs focus:border-yellow-400 focus:outline-none resize-none"
+                                                    className="w-full h-32 bg-black border border-yellow-900/50 p-2 text-white font-mono text-xs focus:border-yellow-400 focus:outline-none resize-y"
                                                     placeholder="5&#10;1 3 4 2 2"
                                                     value={tc.input}
                                                     onChange={e => updateTestCase(idx, 'input', e.target.value)}
@@ -900,7 +884,7 @@ const EditQuestionForm = ({ question, onClose, onSubmit }) => {
                                             <div className="space-y-1">
                                                 <label className="text-[10px] text-yellow-600 uppercase">Expected Output</label>
                                                 <textarea
-                                                    className="w-full h-16 bg-black border border-yellow-900/50 p-2 text-white font-mono text-xs focus:border-yellow-400 focus:outline-none resize-none"
+                                                    className="w-full h-32 bg-black border border-yellow-900/50 p-2 text-white font-mono text-xs focus:border-yellow-400 focus:outline-none resize-y"
                                                     placeholder="2"
                                                     value={tc.output}
                                                     onChange={e => updateTestCase(idx, 'output', e.target.value)}
@@ -1102,8 +1086,8 @@ const LeaderboardPanel = ({ leaderboard: initialLeaderboard }) => {
                             <div
                                 key={team.teamName}
                                 className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors hover:bg-cyan-900/10 ${idx === 0 ? 'bg-yellow-500/5' :
-                                        idx === 1 ? 'bg-gray-400/5' :
-                                            idx === 2 ? 'bg-orange-500/5' : ''
+                                    idx === 1 ? 'bg-gray-400/5' :
+                                        idx === 2 ? 'bg-orange-500/5' : ''
                                     }`}
                             >
                                 <div className="col-span-1">

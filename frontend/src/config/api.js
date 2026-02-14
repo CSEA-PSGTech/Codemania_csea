@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 // Execution Server - runs code and returns results
-export const EXECUTION_SERVER_URL = import.meta.env.VITE_EXECUTION_SERVER_URL ?? 'http://localhost:6001';
+export const EXECUTION_SERVER_URL = import.meta.env.VITE_EXECUTION_SERVER_URL ?? 'http://localhost:3000';
 
 // Core Backend - authentication, problems, submissions
 export const CORE_BACKEND_URL = import.meta.env.VITE_CORE_BACKEND_URL ?? 'http://localhost:5000';

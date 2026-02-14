@@ -4,7 +4,7 @@ const Question = require("../models/Question");
 exports.getAllQuestions = async (req, res) => {
   try {
     const questions = await Question.find().select(
-      "title tag description constraints nonOptimizedCode nonOptimizedCodeJava totalPoints currentPoints noOfTeamsSolved timeLimit memoryLimit maxInputN"
+      "title tag description constraints nonOptimizedCode totalPoints currentPoints noOfTeamsSolved timeLimitPython memoryLimit maxInputN"
     );
 
     res.json(questions);
@@ -18,7 +18,7 @@ exports.getAllQuestions = async (req, res) => {
 exports.getQuestionById = async (req, res) => {
   try {
     const question = await Question.findById(req.params.id).select(
-      "title tag description constraints nonOptimizedCode nonOptimizedCodeJava totalPoints currentPoints noOfTeamsSolved timeLimit memoryLimit maxInputN"
+      "title tag description constraints nonOptimizedCode totalPoints currentPoints noOfTeamsSolved timeLimitPython memoryLimit maxInputN"
     );
 
     if (!question) {
